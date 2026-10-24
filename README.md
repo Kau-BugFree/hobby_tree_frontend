@@ -314,7 +314,7 @@ npm run typecheck
 프로젝트의 상세 협업 규칙은 다음 문서를 참고해주세요.
 
 - [Contributing Guide](./CONTRIBUTING.md)
-- [Figma 디자인](<figma-link>)
+- [Figma 디자인](https://www.figma.com/design/0Fs2lOPrxiR5P7cqhkAjIZ/HobbyTree-%ED%95%98%EB%B9%84%ED%8A%B8%EB%A6%AC-v5-%C2%B7-%EC%86%90%EA%B7%B8%EB%A6%BC-%EB%AA%85%EC%84%B8-%EA%B8%B0%EC%A4%80?node-id=0-1&p=f&t=6K5I9Nnfz4jQTQ9w-0)
 
 ---
 
