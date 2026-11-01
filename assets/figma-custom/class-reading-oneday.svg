@@ -1,0 +1,19 @@
+<svg width="180" height="108" viewBox="0 0 180 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="illustration">
+<path id="Shadow" d="M90 106.2C131.753 106.2 165.6 103.782 165.6 100.8C165.6 97.8177 131.753 95.4 90 95.4C48.2473 95.4 14.4 97.8177 14.4 100.8C14.4 103.782 48.2473 106.2 90 106.2Z" fill="#0D530E" fill-opacity="0.12"/>
+<path id="Page left" d="M57.6 59.4C48.6 52.2 36 51.3 23.4 55.8V91.8C36 87.3 48.6 88.2 57.6 95.4V59.4Z" fill="#FFFDF4" stroke-width="3.6" stroke-linejoin="round" stroke="#0D530E"/>
+<path id="Page right" d="M57.6 59.4C66.6 52.2 79.2 51.3 91.8 55.8V91.8C79.2 87.3 66.6 88.2 57.6 95.4V59.4Z" fill="#FFFDF4" stroke-width="3.6" stroke-linejoin="round" stroke="#0D530E"/>
+<path id="Lines left" d="M30.6 64.8C37.8 62.6 44.1 63 50.4 66.2M30.6 73.8C37.8 71.6 44.1 72 50.4 75.2M30.6 82.8C37.8 80.6 44.1 81 50.4 84.2" stroke-width="2.7" stroke-linecap="round" stroke="#8A5E0F" stroke-opacity="0.75"/>
+<path id="Lines right" d="M64.8 66.2C71.1 63 77.4 62.6 84.6 64.8M64.8 75.2C71.1 72 77.4 71.6 84.6 73.8" stroke-width="2.7" stroke-linecap="round" stroke="#8A5E0F" stroke-opacity="0.75"/>
+<path id="Bookmark" d="M77.4 53.1V68.4L81.45 64.8L85.5 68.4V54" fill="#306D29"/>
+<path id="Sparkle" d="M41.4 46.8C36.9 40.5 45.9 36.9 41.4 30.6M57.6 43.2C53.1 36.9 62.1 33.3 57.6 27" stroke-width="2.7" stroke-linecap="round" stroke="#8DAE78"/>
+<rect id="Book bottom" x="104.4" y="79.2" width="52.2" height="14.4" rx="3.6" fill="#306D29"/>
+<path id="Book bottom spine" d="M113.4 86.4H147.6" stroke-width="2.7" stroke-linecap="round" stroke="#8DAE78"/>
+<rect id="Book middle" x="109.8" y="64.8" width="43.2" height="14.4" rx="3.6" fill="#8A5E0F"/>
+<path id="Book middle spine" d="M117 72H145.8" stroke-width="2.7" stroke-linecap="round" stroke="#FFFDF4" stroke-opacity="0.6"/>
+<rect id="Book top" x="106.2" y="50.4" width="46.8" height="14.4" rx="3.6" fill="#FFFDF4" stroke-width="3.6" stroke="#0D530E"/>
+<path id="Book top spine" d="M114.3 57.6H124.2" stroke-width="2.7" stroke-linecap="round" stroke="#306D29"/>
+<path id="Leaf" d="M131.4 48.6C128.7 41.4 133.2 35.1 141.3 34.2C142.2 42.3 138.6 47.7 131.4 48.6Z" fill="#8DAE78"/>
+<path id="Leaf_2" d="M126 48.6C123.3 43.2 120.6 41.4 115.2 41.4C115.2 46.8 119.7 49.5 126 48.6Z" fill="#8A5E0F"/>
+</g>
+</svg>
