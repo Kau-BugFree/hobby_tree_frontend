@@ -26,6 +26,9 @@ import { withComma } from '../../lib/appState';
 import { go } from '../../lib/nav';
 import { COLORS } from '../../theme';
 
+// 시스템 글자 크기를 키워도 날짜 카드가 과하게 커지지 않도록 상한을 둔다
+const DATE_FONT_MAX = 1.3;
+
 function DateCard({ slot, selected, onPress }: { slot: DateSlot; selected: boolean; onPress: () => void }) {
   return (
     <Touchable
@@ -35,13 +38,13 @@ function DateCard({ slot, selected, onPress }: { slot: DateSlot; selected: boole
       onPress={onPress}
       style={[styles.date, selected ? styles.dateOn : styles.dateOff]}
     >
-      <AppText variant="caption12Medium" color={selected ? 'textOnDarkMuted' : 'textMuted'}>
+      <AppText variant="caption12Medium" color={selected ? 'textOnDarkMuted' : 'textMuted'} maxFontSizeMultiplier={DATE_FONT_MAX}>
         {slot.weekday}
       </AppText>
-      <AppText variant="body16Bold" color={selected ? 'textOnDark' : 'textPrimary'}>
+      <AppText variant="body16Bold" color={selected ? 'textOnDark' : 'textPrimary'} numberOfLines={1} maxFontSizeMultiplier={DATE_FONT_MAX}>
         {slot.date}
       </AppText>
-      <AppText variant="micro11Bold" color={selected ? 'textOnDark' : 'brandPrimary'}>
+      <AppText variant="micro11Bold" color={selected ? 'textOnDark' : 'brandPrimary'} maxFontSizeMultiplier={DATE_FONT_MAX}>
         {`${slot.seats}자리`}
       </AppText>
     </Touchable>
@@ -203,7 +206,16 @@ const styles = StyleSheet.create({
   },
   dateScroll: { marginHorizontal: -24 },
   dates: { gap: 8, paddingHorizontal: 24 },
-  date: { width: 62, height: 80, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  date: {
+    minWidth: 62,
+    minHeight: 80,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
   dateOn: { backgroundColor: COLORS.brandPrimary },
   dateOff: { backgroundColor: COLORS.bgSurface, borderWidth: 1, borderColor: COLORS.borderDefault },
   stepper: {
