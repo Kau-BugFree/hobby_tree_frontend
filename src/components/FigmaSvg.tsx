@@ -12,7 +12,7 @@ export function hasFigmaSvg(name: string) {
  * Figma 컴포넌트 그래픽 (src/assets/figmaSvg.ts).
  * 해당 이름의 그래픽이 없으면 아무것도 그리지 않으니, 호출하는 쪽에서 hasFigmaSvg로 대체 UI를 정한다.
  */
-export function FigmaSvg({ name, width, height }: { name: string; width: number; height: number }) {
+export function FigmaSvg({ name, width, height }: { name: string; width: number | `${number}%`; height: number }) {
   const xml = FIGMA_SVG[name];
   if (!xml) return null;
   return <SvgXml xml={xml} width={width} height={height} />;

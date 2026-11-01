@@ -24,7 +24,7 @@ const DURATION_MS = 1800;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [msg, setMsg] = useState<ToastMessage | null>(null);
-  const opacity = useRef(new Animated.Value(0)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 

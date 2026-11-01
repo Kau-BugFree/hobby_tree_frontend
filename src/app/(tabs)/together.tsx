@@ -26,7 +26,7 @@ import type { HobbyKey } from '../../components/Graphics';
 import { CLASSES, ClassItem, TOGETHER_FILTERS } from '../../data/together';
 import { withComma } from '../../lib/appState';
 import { go } from '../../lib/nav';
-import { COLORS, SHADOWS } from '../../theme';
+import { COLORS, shadow } from '../../theme';
 
 function ChatButton() {
   return (
@@ -35,11 +35,7 @@ function ChatButton() {
       <AppText variant="callout14Bold" color="brandDeep">
         채팅
       </AppText>
-      <View style={styles.soon}>
-        <AppText variant="micro11Bold" color="textMuted">
-          준비 중
-        </AppText>
-      </View>
+      <Tag label="준비 중" tone="gray" />
     </Touchable>
   );
 }
@@ -49,9 +45,9 @@ const openClass = (c: ClassItem) =>
 
 function FeaturedClassCard({ item }: { item: ClassItem }) {
   return (
-    <Touchable accessibilityLabel={item.title} onPress={() => openClass(item)} style={[styles.featured, SHADOWS.card]}>
+    <Touchable accessibilityLabel={item.title} onPress={() => openClass(item)} style={[styles.featured, FEATURED_SHADOW]}>
       <View style={styles.featuredImage}>
-        <IllustrationSlot name={`class-${item.id}`} width={200} height={100} />
+        <IllustrationSlot name={`class-${item.id}`} width={180} height={108} />
         <View style={styles.imageTags}>
           <Tag label={item.kind === '원데이' ? '원데이 클래스' : '공공 프로그램'} tone="solid" />
           {item.partner ? <Tag label="제휴" tone="ad" /> : null}
@@ -75,7 +71,7 @@ function FeaturedClassCard({ item }: { item: ClassItem }) {
           </AppText>
         </View>
         <View style={styles.priceRow}>
-          <AppText variant="headline18Bold" color="brandDeep">
+          <AppText variant="body16Bold" color="brandDeep">
             {item.price ? `${withComma(item.price)}원` : '무료'}
           </AppText>
           <Tag label={`${item.hobby} ${item.stage}단계 활동으로 인정`} tone="water" />
@@ -91,8 +87,8 @@ function NearbyRow({ item }: { item: ClassItem }) {
       <IconTile size={46} radius={14}>
         <IconSlot name={`hobby-${item.hobby}`} size={22} color="brandDeep" />
       </IconTile>
-      <View style={styles.flex}>
-        <Tag label={item.kind} tone="khaki" />
+      <View style={styles.nearbyText}>
+        <Tag label={item.kind} tone={item.kind === '공공' ? 'gray' : 'khaki'} />
         <AppText variant="callout14Bold" color="textPrimary">
           {item.title}
         </AppText>
@@ -154,38 +150,40 @@ export default function TogetherScreen() {
   );
 }
 
+/** Featured class: shadow(0,10,24,#0D330D@0.12) */
+const FEATURED_SHADOW = shadow(COLORS.shadowForest, 10, 24, 0.12, 6);
+
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   root: { flex: 1, backgroundColor: COLORS.bgApp },
-  content: { gap: 14, paddingHorizontal: 24 },
+  content: { gap: 12, paddingTop: 2, paddingHorizontal: 24 },
   rowGap6: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   chatBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
+    paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: 999,
     backgroundColor: COLORS.bgSurface,
     borderWidth: 1,
     borderColor: COLORS.borderDefault,
   },
-  soon: { paddingVertical: 2, paddingHorizontal: 6, borderRadius: 999, backgroundColor: COLORS.bgSunken },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  featured: { borderRadius: 24, backgroundColor: COLORS.bgSurface, borderWidth: 1, borderColor: COLORS.borderDefault, overflow: 'hidden' },
+  featured: { borderRadius: 30, backgroundColor: COLORS.bgSurface, borderWidth: 1, borderColor: COLORS.borderDefault, overflow: 'hidden' },
   featuredImage: { height: 132, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bgKhaki },
   imageTags: { position: 'absolute', top: 14, left: 16, flexDirection: 'row', gap: 6 },
-  featuredBody: { gap: 4, padding: 16 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  featuredBody: { gap: 6, paddingTop: 14, paddingBottom: 16, paddingHorizontal: 16 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 },
   empty: { gap: 4, padding: 20, borderRadius: 24, backgroundColor: COLORS.bgSunken, alignItems: 'center' },
   nearby: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
-    borderRadius: 20,
+    padding: 12,
+    borderRadius: 22,
     backgroundColor: COLORS.bgSurface,
     borderWidth: 1,
     borderColor: COLORS.borderDefault,
   },
+  nearbyText: { flex: 1, gap: 2 },
 });

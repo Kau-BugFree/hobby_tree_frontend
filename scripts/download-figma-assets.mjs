@@ -1,9 +1,12 @@
 // Figma "HobbyTree 하비트리 v5 · 손그림 명세 기준" 컴포넌트 그래픽을 내려받아
 // src/assets/figmaSvg.ts 로 만들어요. (원본 SVG는 assets/figma/ 에도 저장)
 //
+// Figma에 없어서 직접 그린 SVG는 assets/figma-custom/ 에 두면 같은 이름(파일명)으로 함께 들어가요.
+//
 // 실행: 프로젝트 폴더(hobbytree)에서  node scripts/download-figma-assets.mjs
-// 주의: Figma 임시 주소라 2026-11-01쯤 만료돼요. 만료되면 Claude에게 새 주소를 요청하세요.
-import { mkdir, writeFile } from 'node:fs/promises';
+// 주의: Figma 임시 주소는 며칠 뒤 만료돼요. 내려받기에 실패하면 assets/figma/ 에 저장해 둔 원본을 대신 써요.
+//       그림이 바뀌었으면 Claude에게 새 주소를 요청하세요.
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 
 const BASE = 'https://www.figma.com/api/mcp/asset/';
 const assets = {
@@ -31,7 +34,10 @@ const assets = {
   'tab-MY-off': 'fd71a8ab-00e1-42ab-a668-2a9dbe22e6f4',
   // Chatbot FAB (node 2:185) — 24×24
   'chat-spark': '5dcfbc29-30f8-4659-8dba-edcd25cf8ca8',
+  // T-01 Featured class > Image > illustration (node 1:4286) — 180×108, 클래스 id별 (class-<id>)
+  'class-brewing': '0f1a4ae8-9e3c-4936-b1f8-7885d2d8f590/24224.svg',
 };
+const CUSTOM_DIR = 'assets/figma-custom';
 
 /** react-native-svg가 못 읽는 CSS var(--x, #색) → #색 으로 바꾸고 고정 크기 속성 제거 */
 function clean(svg) {
@@ -61,9 +67,20 @@ for (const [name, id] of Object.entries(assets)) {
     out[name] = clean(text);
     console.log(`완료  ${name}`);
   } catch (e) {
-    console.error(`실패  ${name}  (${e.message})`);
-    failed++;
+    try {
+      out[name] = clean(await readFile(`assets/figma/${name}.svg`, 'utf8'));
+      console.warn(`보관본  ${name}  (${e.message} — assets/figma/ 원본 사용)`);
+    } catch {
+      console.error(`실패  ${name}  (${e.message})`);
+      failed++;
+    }
   }
+}
+
+for (const file of (await readdir(CUSTOM_DIR).catch(() => [])).filter((f) => f.endsWith('.svg'))) {
+  const name = file.slice(0, -'.svg'.length);
+  out[name] = clean(await readFile(`${CUSTOM_DIR}/${file}`, 'utf8'));
+  console.log(`직접 제작  ${name}`);
 }
 
 const body = Object.entries(out)

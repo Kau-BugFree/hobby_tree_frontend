@@ -77,7 +77,14 @@ export function TreeStage({ stage, scale = 1, style }: { stage: TreeStageNo; sca
 
 /** 이미지·일러스트 자리 (Figma "illustration" 프레임) */
 export function IllustrationSlot({ name, width, height, style }: { name: string; width: number | `${number}%`; height: number; style?: StyleProp<ViewStyle> }) {
-  // TODO: Replace with Icon/SVG (name)
+  // Figma 일러스트 (class-<클래스 id> 등). 없는 이름은 점선 자리 표시를 그린다
+  if (hasFigmaSvg(name)) {
+    return (
+      <View accessibilityLabel={name} style={[{ width, height }, style]}>
+        <FigmaSvg name={name} width={typeof width === 'number' ? width : '100%'} height={height} />
+      </View>
+    );
+  }
   return <View accessibilityLabel={name} style={[styles.illu, { width, height }, style]} />;
 }
 

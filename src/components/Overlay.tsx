@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -32,7 +32,7 @@ export interface OverlaySheetProps {
 /** 아래에서 올라오는 바텀 시트 (grabber + 위쪽 radius 32) */
 export function OverlaySheet({ children, onDismiss, style, gap = 12, backdrop }: OverlaySheetProps) {
   const insets = useSafeAreaInsets();
-  const y = useRef(new Animated.Value(40)).current;
+  const [y] = useState(() => new Animated.Value(40));
   useEffect(() => {
     Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 0, speed: 18 }).start();
   }, [y]);

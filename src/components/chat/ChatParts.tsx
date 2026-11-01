@@ -2,7 +2,7 @@
  * 하비 코치 공통 서브 컴포넌트 (C-01 패널 · C-02 대화)
  * - CoachAvatar, MeBubble, CoachBubble(출처 + 관련 활동), TypingBubble, QuickPill
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import type { ChatMessage } from '../../data/chat';
@@ -70,7 +70,7 @@ export function CoachBubble({ message, tone = 'surface' }: { message: Pick<ChatM
 
 /** Figma "Typing" (점 3개). 점이 차례로 깜빡인다. */
 export function TypingBubble() {
-  const dots = useRef([0, 1, 2].map(() => new Animated.Value(0.3))).current;
+  const [dots] = useState(() => [0, 1, 2].map(() => new Animated.Value(0.3)));
   useEffect(() => {
     const loop = Animated.loop(
       Animated.stagger(
