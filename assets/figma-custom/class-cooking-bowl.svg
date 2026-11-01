@@ -1,0 +1,17 @@
+<svg width="180" height="108" viewBox="0 0 180 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="illustration">
+<path id="Shadow" d="M90 106.2C131.753 106.2 165.6 103.782 165.6 100.8C165.6 97.8177 131.753 95.4 90 95.4C48.2473 95.4 14.4 97.8177 14.4 100.8C14.4 103.782 48.2473 106.2 90 106.2Z" fill="#0D530E" fill-opacity="0.12"/>
+<path id="Chopsticks" d="M62 62L90 32.4M70 64L97.2 36" stroke-width="3.6" stroke-linecap="round" stroke="#8A5E0F"/>
+<path id="Bowl" d="M24 58H92C92 77.8 77.8 93.6 58 93.6C38.2 93.6 24 77.8 24 58Z" fill="#FFFDF4" stroke-width="3.6" stroke-linejoin="round" stroke="#0D530E"/>
+<path id="Broth" d="M30.6 64.8H85.4C83.6 77.4 72.4 87.3 58 87.3C43.6 87.3 32.4 77.4 30.6 64.8Z" fill="#8A5E0F" fill-opacity="0.75"/>
+<path id="Garnish" d="M41.4 64.8C41.4 61.8 45.9 61.8 45.9 64.8M55.8 64.8C55.8 61.4 60.8 61.4 60.8 64.8M69.3 64.8C69.3 61.8 73.8 61.8 73.8 64.8" stroke-width="3.6" stroke-linecap="round" stroke="#306D29"/>
+<path id="Steam" d="M41.4 46.8C36.9 40.5 45.9 36.9 41.4 30.6M55.8 46.8C51.3 40.5 60.3 36.9 55.8 30.6" stroke-width="2.7" stroke-linecap="round" stroke="#8DAE78"/>
+<path id="Pot" d="M106.2 52.2H153V77.4C153 86.5 145.6 93.6 136.8 93.6H122.4C113.3 93.6 106.2 86.5 106.2 77.4V52.2Z" fill="#306D29"/>
+<path id="Pot handles" d="M106.2 59.4C97.2 59.4 97.2 70.2 106.2 70.2M153 59.4C162 59.4 162 70.2 153 70.2" stroke-width="3.6" stroke="#306D29"/>
+<path id="Lid" d="M110.7 46.8C110.7 37.8 148.5 37.8 148.5 46.8H110.7Z" fill="#306D29"/>
+<path id="Lid rim" d="M103.5 48.6H155.7" stroke-width="3.6" stroke-linecap="round" stroke="#0D530E"/>
+<path id="Lid knob" d="M129.6 38.7C131.588 38.7 133.2 37.0882 133.2 35.1C133.2 33.1118 131.588 31.5 129.6 31.5C127.612 31.5 126 33.1118 126 35.1C126 37.0882 127.612 38.7 129.6 38.7Z" fill="#0D530E"/>
+<path id="Leaf" d="M150.3 27C147.6 19.8 152.1 13.5 160.2 12.6C161.1 20.7 157.5 26.1 150.3 27Z" fill="#8DAE78"/>
+<path id="Leaf_2" d="M163.8 31.5C162 25.2 165.6 21.6 171 21.6C171.9 27 168.3 30.6 163.8 31.5Z" fill="#8A5E0F"/>
+</g>
+</svg>

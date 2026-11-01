@@ -75,6 +75,8 @@ export default function ConversationScreen() {
 
   // 첫 진입: ?q= 가 있으면 그 질문을, 없으면 Figma 마지막 상태(답을 기다리는 내 질문)에 대한 답을 요청
   useEffect(() => {
+    // 마운트 때 한 번만 보내는 요청이라 effect 안에서 상태를 바꿔도 된다
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (q) send(q);
     else if (PENDING) request(INITIAL_MESSAGES[INITIAL_MESSAGES.length - 1].text);
     return () => abortRef.current?.abort();
