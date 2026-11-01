@@ -27,8 +27,14 @@ function HobbyPickCard({ item, picked, onToggle }: HobbyPickCardProps) {
       onPress={onToggle}
       style={[styles.card, picked ? styles.cardOn : styles.cardOff]}
     >
-      <View style={[styles.icon, { backgroundColor: picked ? COLORS.bgForest : COLORS.bgSunken }]}>
-        <HobbyIcon hobby={item.hobby} size={22} color={picked ? 'paletteKhaki' : 'textMuted'} />
+      {/* 선택 시 아이콘 칸 색은 유지하고 테두리 + ✓ 배지로 표시 (Figma A안) */}
+      <View style={[styles.icon, picked && styles.iconOn]}>
+        <HobbyIcon hobby={item.hobby} size={22} color={picked ? 'bgForest' : 'textMuted'} />
+        {picked ? (
+          <View style={styles.badge}>
+            <IconSlot name="check" size={10} color="textOnDark" />
+          </View>
+        ) : null}
       </View>
       <View style={styles.body}>
         <View style={styles.titleRow}>
@@ -117,7 +123,29 @@ const styles = StyleSheet.create({
   },
   cardOn: { borderWidth: 2, borderColor: COLORS.brandPrimary },
   cardOff: { borderWidth: 1, borderColor: COLORS.borderDefault },
-  icon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  icon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.bgSunken,
+  },
+  iconOn: { borderWidth: 2, borderColor: COLORS.brandPrimary },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    // Figma: 18px 배지 + 바깥 흰 테두리 2px
+    width: 22,
+    height: 22,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.brandPrimary,
+    borderWidth: 2,
+    borderColor: COLORS.bgSurface,
+  },
   body: { flex: 1, gap: 3 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   check: { width: 26, height: 26, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
