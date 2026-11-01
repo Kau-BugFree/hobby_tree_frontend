@@ -157,5 +157,3 @@ src/
 - `npx tsc --noEmit` 통과 (`--noUnusedLocals`로 미사용 코드도 확인)
 - `npx expo export --platform ios|android` 번들 생성 성공
 - 실제 기기와 시뮬레이터에서는 아직 실행해 보지 않았습니다. 화면별 UI 확인이 필요합니다.
-
-git test
