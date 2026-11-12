@@ -157,3 +157,64 @@ src/
 - `npx tsc --noEmit` 통과 (`--noUnusedLocals`로 미사용 코드도 확인)
 - `npx expo export --platform ios|android` 번들 생성 성공
 - 실제 기기와 시뮬레이터에서는 아직 실행해 보지 않았습니다. 화면별 UI 확인이 필요합니다.
+
+## 백엔드 API 연동 — 중간발표 범위 (hobbytree4)
+
+중간발표(로그인 · 온보딩 · 취미 첫 체험 · 챗봇)에 필요한 **API 13개 + API-06(연령대 저장)**을 연결했다.
+나머지 화면(홈 나무, 활동 기록, 함께, MY 등)은 지금처럼 가짜 데이터(`src/data`)로 동작한다.
+
+### 실행
+
+```bash
+npm install
+cp .env.example .env.local   # EXPO_PUBLIC_API_URL 에 백엔드 주소 (휴대폰이면 PC IP)
+npx expo start -c
+```
+
+- 소셜 SDK 연결 전에는 `.env.local` 에 `EXPO_PUBLIC_DEV_KAKAO_TOKEN=<카카오 액세스 토큰>` 을 넣으면
+  개발 모드에서 그 토큰으로 로그인(API-01)을 시험할 수 있다. 토큰이 없으면 '체험 모드'(가짜 데이터)로 넘어간다.
+- 웹 미리보기는 토큰을 메모리에만 둬서 새로고침하면 로그아웃된다.
+
+### 연결한 API
+
+| API | 내용 | 화면 / 파일 |
+| --- | --- | --- |
+| 01 | 소셜 로그인 (KAKAO·GOOGLE) | O-01 로그인 `onboarding/login.tsx` |
+| 02 | 토큰 재발급 (401이면 자동 1회, 동시 호출 하나로) | `api/client.ts` |
+| 03 | 로그아웃 | MY 탭 하단 ‘로그아웃’ |
+| 04 | 탈퇴 계정 복구 (AUTH409_1 → 복구 안내) | O-01 로그인 |
+| 10 | 온보딩 선택지·약관 | 추천 준비 · 약관 화면 |
+| 11 | 취향 저장 (expectedVersion, 충돌 시 1회 재시도) | O-05-2 `onboarding/summary.tsx` |
+| 12 | 취향 조회 (404 = 최초) | 〃 · 약관 화면 |
+| 06 | 프로필 수정 — 연령대 저장 (API-13의 ‘필수 프로필’) | O-05-1 약관 화면에서 선택 → 추천 준비에서 전송 |
+| 13 | 온보딩 완료 (약관별 동의) | **새 화면** O-05-1 `onboarding/terms.tsx` → 추천 준비에서 전송 |
+| 14 | 맞춤 추천 생성 (Idempotency-Key) | O-05-2 → O-06 `onboarding/recommend.tsx` |
+| 15 | 최근 추천 (isStale → ‘새로 추천받기’) | O-06 |
+| 16 | 전체 취미 탐색·검색 (커서 ‘더 보기’) | E-04 `experience/explore.tsx` |
+| 17 | 취미 상세 · 첫 체험 안내 | **새 화면** `hobby/[id].tsx` |
+| 34 | 하비 코치 질문·답변 + 대화 목록·메시지 | C-02 `chat/conversation.tsx` |
+
+### 흐름
+
+로그인 → (PENDING_ONBOARDING) 온보딩 1~4 → 약관 동의·연령대 → 추천 준비(10 → 12 → 11 → 06 → 13 → 14)
+→ 추천 목록(14/15, 상세 17) → 추가 확인 → 씨앗 심기 완료 → 홈
+
+백엔드는 온보딩을 마친(ACTIVE) 회원에게만 추천·하비 코치를 준다(미완료면 AUTH403_2).
+그래서 약관 동의를 추천 앞으로 옮기고, 취향 저장 직후 온보딩 완료(API-13)를 보낸 다음 추천(API-14)을 요청한다.
+
+### 화면 답변 → 서버 취향 값 (`api/mappers.ts`)
+
+| 서버 값 | 화면 답변 |
+| --- | --- |
+| budgetLevel | Q05 이번 달 전체 예산 → LOW(3만 이하) · MEDIUM(10만 이하) · HIGH, 모르면 LOW |
+| availableTimeMinutes | Q06 한 번에 쓸 시간 → 15·30·60·120 중 넘지 않는 가장 큰 값, 모르면 30 |
+| indoorOutdoor | Q09 선호 장소 + ‘야외’ 제외 → INDOOR / OUTDOOR / ANY |
+| difficultyPreference | Q01 취미 상태 → 오래 해옴 INTERMEDIATE · 최근 시작 ANY · 나머지 BEGINNER |
+| preferredCategoryIds | Q02 관심 취미 중 요리·악기·독서 |
+
+### 아직 남은 것
+
+- 카카오·구글 SDK 연결(개발용 빌드 필요) — `lib/socialAuth.ts` TODO
+- ‘씨앗 심기’는 화면만 바뀌고 서버에는 심지 않는다 (나무 심기 API-19는 이번 범위 밖)
+- 내 프로필(API-05)이 범위 밖이라 닉네임은 아직 가짜 값, 앱 재시작 시 회원 상태는 저장해 둔 값으로 판단
+- 하비 코치 답변은 백엔드 Part 1 고정 문구 (AI 연동은 백엔드 Part 2)
