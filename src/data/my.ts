@@ -51,7 +51,7 @@ export const profileTags = (p: ProfileData, places: string[]) => [
 ];
 
 /** M-01 통계 벤토 — 서버 집계값 (온보딩·체험·클래스 기록 포함) */
-export const PROFILE_STATS = { trees: 4, maxStage: 3, doneActivities: 38 };
+export const PROFILE_STATS = { trees: 3, maxStage: 3, doneActivities: 33 };
 
 /** M-02 요약 카드: 나무를 심은 날 · 키운 날 수 */
 export const PLANTED_INFO: Partial<Record<HobbyKey, { plantedAt: string; days: number }>> = {
