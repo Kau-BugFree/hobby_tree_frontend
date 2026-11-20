@@ -1,7 +1,7 @@
 /**
  * M-03 프로필 관리
  * - 사진(96) + 카메라 배지 + ‘사진 변경’ → M-05 시트
- * - 프로필: 닉네임(TextInput) · 연령대(단일 칩) · 지역(→ M-08 직접 입력, ‘현재 위치’ → M-04 동의 시트)
+ * - 프로필: 닉네임(TextInput, 규칙·중복 확인 결과를 입력칸 밑 작은 글씨로) · 연령대(단일 칩) · 지역(→ M-08 직접 입력, ‘현재 위치’ → M-04 동의 시트)
  * - 추천 조건: 관심 취미(복수) · 꼭 피하고 싶은 조건(복수, ‘없음’ 배타)
  * - 예산: 월/1회 슬라이더 · 시간: 일주일/1회 단일 칩
  * - ‘저장하기’ → 상태 반영 후 M-01로 돌아감. 화면 안 값은 저장 전까지 로컬 상태로만 바뀐다.
@@ -25,6 +25,7 @@ import {
 } from '../../data/my';
 import { STEP3 } from '../../data/onboarding';
 import { nextSelection, useAppState } from '../../lib/appState';
+import { NICKNAME_GUIDE, NICKNAME_MAX, useNicknameCheck } from '../../lib/nickname';
 import { back, go } from '../../lib/nav';
 import { COLORS, TYPO } from '../../theme';
 
@@ -32,8 +33,6 @@ import { COLORS, TYPO } from '../../theme';
 const EXCLUDE_GROUP = STEP3.questions.flatMap((q) => q.groups).find((g) => g.key === 'q09Exclude');
 const EXCLUDE_OPTIONS = (EXCLUDE_GROUP?.options ?? []).filter((o) => o !== '직접 입력');
 const EXCLUDE_EXCLUSIVE = EXCLUDE_GROUP?.exclusive ?? ['없음'];
-
-const NICK_MAX = 10;
 
 export default function ProfileScreen() {
   const { state, update, setAnswer } = useAppState();
@@ -45,7 +44,9 @@ export default function ProfileScreen() {
     Array.isArray(state.answers.q09Exclude) ? state.answers.q09Exclude : [],
   );
   const patch = (p: Partial<ProfileData>) => setProfile((cur) => ({ ...cur, ...p }));
-  const canSave = nick.trim().length > 0 && interests.length > 0;
+  const nickCheck = useNicknameCheck(nick, state.userName);
+  const nickBad = nickCheck.status === 'invalid' || nickCheck.status === 'taken' || nickCheck.status === 'error';
+  const canSave = nickCheck.ok && interests.length > 0;
 
   const onSave = () => {
     update({ userName: nick.trim(), profile, picked: interests.map(interestToHobby) });
@@ -82,17 +83,31 @@ export default function ProfileScreen() {
 
       <FormSection title="프로필">
         <View style={styles.field}>
-          <FieldLabel label="닉네임" right={`${nick.length}/${NICK_MAX}`} />
+          <FieldLabel label="닉네임" right={`${nick.length}/${NICKNAME_MAX}`} />
           <TextInput
             value={nick}
-            onChangeText={(t) => setNick(t.slice(0, NICK_MAX))}
-            maxLength={NICK_MAX}
-            placeholder="닉네임"
+            onChangeText={(t) => setNick(t.slice(0, NICKNAME_MAX))}
+            maxLength={NICKNAME_MAX}
+            placeholder="2~12자 닉네임"
             placeholderTextColor={COLORS.textMuted}
             returnKeyType="done"
+            autoCapitalize="none"
+            autoCorrect={false}
             accessibilityLabel="닉네임"
-            style={[TYPO.body16Regular, styles.input]}
+            style={[
+              TYPO.body16Regular,
+              styles.input,
+              nickBad && styles.inputError,
+              nickCheck.status === 'available' && styles.inputOk,
+            ]}
           />
+          <AppText
+            variant="caption12Medium"
+            color={nickBad ? 'accentDanger' : nickCheck.status === 'available' ? 'brandPrimary' : 'textMuted'}
+            accessibilityLiveRegion="polite"
+          >
+            {nickCheck.message ?? NICKNAME_GUIDE}
+          </AppText>
         </View>
         <View style={styles.field}>
           <FieldLabel label="연령대" hint="선택" />
@@ -192,6 +207,8 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     includeFontPadding: false,
   },
+  inputError: { borderColor: COLORS.accentDanger },
+  inputOk: { borderColor: COLORS.brandPrimary },
   regionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   regionField: {
     flex: 1,
