@@ -24,10 +24,13 @@ import {
 } from '../../components';
 import { cardsOfLevel, catalogOf, minuteRange } from '../../data/catalog';
 import { COMPLETED } from '../../data/experience';
-import { TREES, TreeData } from '../../data/hobbies';
+import { TREES as ALL_TREES, TreeData } from '../../data/hobbies';
 import { useCompact } from '../../lib/layout';
 import { go } from '../../lib/nav';
 import { COLORS, shadow } from '../../theme';
+
+/** 백엔드 요청(11/14): 체험·MY 탭에서는 커피 나무를 보여 주지 않는다 (홈·함께 등 다른 화면은 그대로) */
+const TREES = ALL_TREES.filter((t) => t.hobby !== '커피');
 
 const LEVELS: TreeStageNo[] = [0, 1, 2, 3, 4, 5];
 
@@ -103,7 +106,7 @@ function StageCard({ level, title, summary, count, range, done, onPress }: Stage
 
 export default function ExperienceScreen() {
   const insets = useSafeAreaInsets();
-  const [hobby, setHobby] = useState<TreeData['hobby']>('커피');
+  const [hobby, setHobby] = useState<TreeData['hobby']>(TREES[0].hobby);
   const tree = TREES.find((t) => t.hobby === hobby)!;
   const catalog = catalogOf(hobby);
   const completed = COMPLETED[hobby];

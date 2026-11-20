@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
 import type { HobbyKey } from '../components/Graphics';
+import type { ChatMessage } from '../data/chat';
 import { PROFILE, ProfileData } from '../data/my';
 import { HOBBY_CHECKS, INITIAL_PICKED, OPTIONAL, STEP1, STEP2, STEP3 } from '../data/onboarding';
 
@@ -30,6 +31,11 @@ export interface AppState {
   profile: ProfileData;
   /** M-04 위치 동의 여부 (동의 시각·버전은 서버에 기록) */
   locationConsent: boolean;
+  /**
+   * C-02 마지막 하비 코치 대화 — 챗봇을 다시 열면 이어서 보여 준다 (11/16 회의: 대화 기록 불러오기)
+   * TODO(API): GET /api/v1/coach/conversations → 가장 최근 대화의 GET /conversations/{id}/messages 로 교체
+   */
+  chatMessages: ChatMessage[] | null;
 }
 
 const initialAnswers = (): Record<string, Answer> => {
@@ -59,6 +65,7 @@ const INITIAL: AppState = {
   alarms: [],
   profile: PROFILE,
   locationConsent: false,
+  chatMessages: null,
 };
 
 interface Ctx {

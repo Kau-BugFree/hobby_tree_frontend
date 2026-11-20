@@ -107,7 +107,7 @@ function Pager({ page, pages, onChange }: { page: number; pages: number; onChang
 
 export default function StageActivities() {
   const insets = useSafeAreaInsets();
-  const { hobby = '커피', stage = '2' } = useLocalSearchParams<{ hobby?: string; stage?: string }>();
+  const { hobby = '요리', stage = '2' } = useLocalSearchParams<{ hobby?: string; stage?: string }>();
   const level = Number(stage);
   const catalog = catalogOf(hobby);
   const cards = cardsOfLevel(catalog, level);
