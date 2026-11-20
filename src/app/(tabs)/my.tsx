@@ -22,11 +22,14 @@ import {
   Touchable,
 } from '../../components';
 import { Avatar, EmptySlotRow, RoadmapRow } from '../../components/my/MyParts';
-import { MAX_TREE_SLOTS, TREES } from '../../data/hobbies';
+import { MAX_TREE_SLOTS, TREES as ALL_TREES } from '../../data/hobbies';
 import { PROFILE_STATS, profileTags } from '../../data/my';
 import { shortRegion, useAppState } from '../../lib/appState';
 import { go } from '../../lib/nav';
 import { COLORS, SHADOWS } from '../../theme';
+
+/** 백엔드 요청(11/14): 체험·MY 탭에서는 커피 나무를 보여 주지 않는다 (홈·함께 등 다른 화면은 그대로) */
+const TREES = ALL_TREES.filter((t) => t.hobby !== '커피');
 
 interface StatItem {
   value: string;
