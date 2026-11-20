@@ -32,10 +32,10 @@ interface LoginOption {
 
 /** 소셜 브랜드 색상은 디자인 토큰이 아닌 각 사 가이드 색 */
 const LOGIN_OPTIONS: LoginOption[] = [
-  { id: 'KAKAO', label: '카카오로 시작하기', bg: COLORS.kakaoBg, fg: COLORS.kakaoFg, icon: require('../../../assets/brand/kakao.png') },
+  { id: 'KAKAO', label: '카카오 로그인', bg: COLORS.kakaoBg, fg: COLORS.kakaoFg, icon: require('../../../assets/brand/kakao.png') },
   {
     id: 'GOOGLE',
-    label: 'Google로 시작하기',
+    label: 'Google 계정으로 로그인',
     bg: COLORS.googleBg,
     fg: COLORS.googleFg,
     border: COLORS.googleBorder,
@@ -191,5 +191,6 @@ const styles = StyleSheet.create({
   modalBtn: { alignSelf: 'stretch', marginTop: 6 },
   loginInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   loginIcon: { width: 20, height: 20 },
-  loginBtn: { borderRadius: 999, minHeight: 56, paddingVertical: 17, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  // 카카오 디자인 가이드: 모서리 12 — Google도 같은 모양으로 맞춤 (11/18)
+  loginBtn: { borderRadius: 12, minHeight: 54, paddingVertical: 17, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
 });

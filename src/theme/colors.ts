@@ -59,9 +59,14 @@ export const COLORS = {
   shadowWater: '#3D8FCF',
   /** 소셜 로그인 버튼 — 각 사 브랜드 가이드 색 */
   kakaoBg: '#FEE500',
-  kakaoFg: '#1A1A1A',
+  /** 카카오 가이드: 레이블 #000000 85% */
+  kakaoFg: 'rgba(0, 0, 0, 0.85)',
   appleBg: '#FFFFFF',
   appleFg: '#0D0D0D',
+  googleBg: '#FFFFFF',
+  googleFg: '#1F1F1F',
+  /** Google 라이트 테마 테두리 1px */
+  googleBorder: '#747775',
 } as const;
 
 export type ColorToken = keyof typeof COLORS;
