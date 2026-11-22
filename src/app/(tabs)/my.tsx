@@ -150,7 +150,9 @@ export default function MyScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useAppState();
   // 로그인: API-18 나무 목록 기준 / 체험 모드: 가짜 값
-  const { trees: TREES, live, maxTrees: MAX_TREE_SLOTS } = useForest();
+  const { trees: ALL_TREES, live, maxTrees: MAX_TREE_SLOTS } = useForest();
+  // 백엔드 요청(11/14): MY 탭에서는 커피 나무를 보여 주지 않는다 (체험 탭과 같은 기준)
+  const TREES = ALL_TREES.filter((t) => t.hobby !== '커피');
   const stats: StatItem[] = live
     ? [
         { value: `${TREES.length}그루`, label: '키우는 나무', tone: 'forest' },

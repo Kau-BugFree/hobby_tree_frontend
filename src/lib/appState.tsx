@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 
 import type { AgeRange, OnboardingOptions, Recommendation, TermsAgreement } from '../api/types';
 import type { HobbyKey } from '../components/Graphics';
+import type { ChatMessage } from '../data/chat';
 import { PROFILE, ProfileData } from '../data/my';
 import { HOBBY_CHECKS, INITIAL_PICKED, OPTIONAL, STEP1, STEP2, STEP3 } from '../data/onboarding';
 
@@ -36,6 +37,8 @@ export interface AppState {
   profile: ProfileData;
   /** M-04 위치 동의 여부 (동의 시각·버전은 서버에 기록) */
   locationConsent: boolean;
+  /** C-02 체험 모드의 마지막 하비 코치 대화 — 챗봇을 다시 열면 이어서 보여 준다 (로그인 상태는 서버 대화 기록 사용) */
+  chatMessages: ChatMessage[] | null;
   /** ── 서버 연동 값 (로그인 상태에서만 채워짐) ── */
   server: ServerOnboarding;
 }
@@ -88,6 +91,7 @@ const INITIAL: AppState = {
   alarms: [],
   profile: PROFILE,
   locationConsent: false,
+  chatMessages: null,
   server: { options: null, preferencesVersion: null, recommendation: null, pickedHobbyIds: [], coachConversationId: null, agreements: null, ageRange: null, nickname: null },
 };
 

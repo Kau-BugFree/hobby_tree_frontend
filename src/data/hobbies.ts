@@ -231,7 +231,7 @@ export interface NoticeItem {
 }
 
 export const NOTICES: NoticeItem[] = [
-  { id: 'coffee', title: '커피 나무 · 활동 1개만 더 하면 묘목이 돼요', sub: '지금 하는 활동 이어서 하기', icon: 'sprout', href: '/home/activity/커피' },
+  { id: 'cooking', title: '요리 나무 · 활동 2개만 더 하면 새싹이 돼요', sub: '지금 하는 활동 이어서 하기', icon: 'sprout', href: '/home/activity/요리' },
   { id: 'class', title: '브루잉 입문 원데이 클래스 · 토 14:00', sub: '제휴 클래스 일정 안내 · 4자리 남음', icon: 'calendar', href: '/together/class/brewing' },
   { id: 'reading', title: '독서 나무 · 4단계 활동을 둘러볼 수 있어요', sub: '체험에서 단계별 활동 보기', icon: 'book', href: '/experience' },
 ];

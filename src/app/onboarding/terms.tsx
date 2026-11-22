@@ -12,7 +12,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { getOnboardingOptions } from '../../api/endpoints';
-import { ageToServer, mergeTerms, NICKNAME_MAX, NICKNAME_RULE, nicknameError } from '../../api/mappers';
+import { ageToServer, mergeTerms, NICKNAME_MAX } from '../../api/mappers';
 import type { Terms } from '../../api/types';
 import { AppText, Button, Card, ChipGroup, InfoNote, Screen } from '../../components';
 import { AGE_OPTIONS, AgeOption } from '../../data/my';
@@ -20,6 +20,7 @@ import { CheckRow } from '../../components/my/MyParts';
 import { OnboardingBar, StepTitle } from '../../components/onboarding/OnboardingParts';
 import { useAppState } from '../../lib/appState';
 import { go } from '../../lib/nav';
+import { NICKNAME_GUIDE, useNicknameCheck } from '../../lib/nickname';
 import { useSession } from '../../lib/session';
 import { COLORS, TYPO } from '../../theme';
 
@@ -42,8 +43,9 @@ export default function OnboardingTerms() {
   // 연령대는 기본값 없이 직접 고르게 한다 (전에 골랐으면 그 값)
   const [age, setAge] = useState<AgeOption | null>(state.server.ageRange ? state.profile.age : null);
   const [nickname, setNickname] = useState(state.server.nickname ?? '');
-  const nickErr = nicknameError(nickname);
-  const nickOk = NICKNAME_RULE.test(nickname.trim());
+  // 11/16 회의: 회원가입 닉네임 중복 금지 — 규칙·중복 결과를 입력칸 밑 작은 글씨로 (모달 없음)
+  const nickCheck = useNicknameCheck(nickname);
+  const nickOk = nickCheck.ok;
 
   // 로그인 상태인데 선택지(약관)를 아직 못 받았으면 API-10으로 받아 온다
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function OnboardingTerms() {
         <AppText variant="body16Bold" color="textPrimary">
           [필수] 닉네임
         </AppText>
-        <View style={[styles.inputBox, nickErr ? styles.inputBoxError : null]}>
+        <View style={[styles.inputBox, nickCheck.bad ? styles.inputBoxError : null, nickCheck.status === 'available' ? styles.inputBoxOk : null]}>
           <TextInput
             value={nickname}
             onChangeText={(t) => setNickname(t.replace(/\s/g, '').slice(0, NICKNAME_MAX))}
@@ -104,15 +106,13 @@ export default function OnboardingTerms() {
             {`${nickname.length}/${NICKNAME_MAX}`}
           </AppText>
         </View>
-        {nickErr ? (
-          <AppText variant="caption12Medium" color="accentDanger">
-            {nickErr}
-          </AppText>
-        ) : (
-          <AppText variant="caption12Medium" color="textMuted">
-            홈과 MY에서 이 이름으로 불러 드려요.
-          </AppText>
-        )}
+        <AppText
+          variant="caption12Medium"
+          color={nickCheck.bad ? 'accentDanger' : nickCheck.status === 'available' ? 'brandPrimary' : 'textMuted'}
+          accessibilityLiveRegion="polite"
+        >
+          {nickCheck.message ?? `${NICKNAME_GUIDE} · 홈과 MY에서 이 이름으로 불러 드려요`}
+        </AppText>
       </Card>
       <Card radius={22} gap={10}>
         <AppText variant="body16Bold" color="textPrimary">
@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.borderDefault,
   },
   inputBoxError: { borderColor: COLORS.accentDanger },
+  inputBoxOk: { borderColor: COLORS.brandPrimary },
   input: { flex: 1, padding: 0, color: COLORS.textPrimary, includeFontPadding: false },
   divider: { height: 1, backgroundColor: COLORS.borderDefault, marginVertical: 4 },
   doc: { gap: 6, marginBottom: 8, padding: 12, borderRadius: 14, backgroundColor: COLORS.bgApp },

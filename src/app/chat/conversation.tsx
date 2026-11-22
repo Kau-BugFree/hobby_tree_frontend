@@ -11,7 +11,11 @@
  *   - 멀티턴: 첫 질문은 conversationId 없이 → 응답의 conversationId를 다음 질문에 그대로 담아 보낸다
  *     (앱을 다시 열면 마지막 대화 ID를 서버 목록에서 찾아 이어 간다)
  *   - 코치는 지금 요리만 지원 → 빠른 질문은 요리 시나리오(COOKING_SCENARIO) 순서
- * 체험 모드: 지금처럼 가짜 답변(lib/coach.ts)
+ * 체험 모드: 지금처럼 가짜 답변(lib/coach.ts), 마지막 대화는 앱 상태(chatMessages)에 남겨 다시 열면 이어서 보여 준다
+ * 11/16 회의
+ *   · 지난 대화를 이어 보여 줄 때 맨 위에 ‘지난 대화를 이어서 보여 드려요’ 구분 줄
+ *   · 음성 입력: 입력칸이 비어 있으면 보내기 자리에 마이크 → 누르면 듣는 중(최대 60초) → 정지
+ *     TODO(STT): 녹음 파일을 STT로 보내 받은 글자를 입력칸에 넣는다 (11/20 회의: API 연결 검토 중, QA 후 확정)
  */
 import { useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -31,6 +35,9 @@ import { useSession } from '../../lib/session';
 import { COLORS, TYPO } from '../../theme';
 
 const MAX_LEN = 500;
+/** 음성 입력 한 번에 받을 수 있는 최대 길이(초) */
+const VOICE_MAX_SEC = 60;
+const mmss = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
 /** 코치가 제안한 활동 → 말풍선 아래 ‘관련 활동’ (코치는 요리만 지원) */
 const linkedOf = (s?: CoachSuggestedActivity[]): ChatMessage['linked'] =>
@@ -62,15 +69,19 @@ export default function ConversationScreen() {
   const { q, focus } = useLocalSearchParams<{ q?: string; focus?: string }>();
   const ctx = DEFAULT_CONTEXT;
   const { signedIn } = useSession();
-  const { state, updateServer } = useAppState();
+  const { state, update, updateServer } = useAppState();
+  // 체험 모드: 지난 대화가 있으면 그대로 이어서 보여 준다 (처음 한 번만 읽음)
+  const [restored] = useState(() => (signedIn ? null : state.chatMessages));
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     signedIn
       ? []
-      : // 빠른 질문으로 들어오면 답을 기다리는 데모 질문은 빼고 시작
-        q && PENDING
-        ? INITIAL_MESSAGES.slice(0, -1)
-        : INITIAL_MESSAGES,
+      : (restored ??
+        // 빠른 질문으로 들어오면 답을 기다리는 데모 질문은 빼고 시작
+        (q && PENDING ? INITIAL_MESSAGES.slice(0, -1) : INITIAL_MESSAGES)),
   );
+  /** 지난 대화를 불러와 이어 보여 주는 중인지 (구분 줄 표시) */
+  const [historyShown, setHistoryShown] = useState(!!restored);
+  const [listenSec, setListenSec] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
   const [typing, setTyping] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(signedIn);
@@ -157,7 +168,7 @@ export default function ConversationScreen() {
   useEffect(() => {
     if (!signedIn) {
       if (q) send(q);
-      else if (PENDING) request(INITIAL_MESSAGES[INITIAL_MESSAGES.length - 1].text);
+      else if (!restored && PENDING) request(INITIAL_MESSAGES[INITIAL_MESSAGES.length - 1].text);
       return () => abortRef.current?.abort();
     }
     let alive = true;
@@ -171,6 +182,7 @@ export default function ConversationScreen() {
           conversationRef.current = id;
           updateServer({ coachConversationId: id });
           setMessages((page.items ?? []).map(toBubble));
+          setHistoryShown((page.items ?? []).length > 0);
         }
       } catch {
         // 지난 대화를 못 불러와도 새 대화는 할 수 있다
@@ -192,7 +204,42 @@ export default function ConversationScreen() {
     conversationRef.current = null;
     updateServer({ coachConversationId: null });
     setMessages([]);
+    setHistoryShown(false);
   };
+
+  // 체험 모드: 대화가 바뀔 때마다 저장 → 챗봇을 닫았다 다시 열어도 이어서 보인다
+  useEffect(() => {
+    if (!signedIn) update({ chatMessages: messages });
+  }, [messages, signedIn, update]);
+
+  // 음성 입력: 1초마다 시간을 올린다
+  const listening = listenSec !== null;
+  useEffect(() => {
+    if (!listening) return;
+    const t = setInterval(() => setListenSec((s) => (s === null ? s : s + 1)), 1000);
+    return () => clearInterval(t);
+  }, [listening]);
+
+  const stopListening = useCallback(
+    (sec: number) => {
+      setListenSec(null);
+      if (sec < 1) {
+        toast({ title: '너무 짧아요', sub: '버튼을 누르고 1초 이상 말해 주세요', icon: 'info' });
+        return;
+      }
+      // TODO(STT): 녹음 파일 → STT → 받은 글자를 setDraft로 입력칸에 넣기
+      toast({ title: '음성 인식은 준비 중이에요', sub: '연결되면 말한 내용이 입력칸에 들어가요', icon: 'info' });
+    },
+    [toast],
+  );
+
+  // 최대 길이에 닿으면 자동으로 멈춘다
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (listenSec !== null && listenSec >= VOICE_MAX_SEC) stopListening(listenSec);
+  }, [listenSec, stopListening]);
+
+  const canSend = !!draft.trim() && !typing;
 
   return (
     <KeyboardSafe style={[styles.root, { paddingTop: insets.top }]}>
@@ -234,6 +281,17 @@ export default function ConversationScreen() {
         contentContainerStyle={styles.messages}
         keyboardShouldPersistTaps="handled"
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        ListHeaderComponent={
+          historyShown && messages.length > 0 ? (
+            <View style={styles.restored}>
+              <View style={styles.restoredLine} />
+              <AppText variant="micro11Bold" color="textMuted">
+                지난 대화를 이어서 보여 드려요
+              </AppText>
+              <View style={styles.restoredLine} />
+            </View>
+          ) : undefined
+        }
         ListEmptyComponent={
           signedIn ? (
             <View style={styles.empty}>
@@ -271,27 +329,56 @@ export default function ConversationScreen() {
           >
             <IconSlot name="plus" size={18} color="textBody" />
           </Touchable>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            autoFocus={focus === '1'}
-            maxLength={MAX_LEN}
-            multiline
-            placeholder="메시지 입력"
-            placeholderTextColor={COLORS.textMuted}
-            accessibilityLabel="메시지 입력"
-            style={[TYPO.callout14Regular, styles.input]}
-          />
-          <Touchable
-            small
-            accessibilityLabel="보내기"
-            accessibilityState={{ disabled: !draft.trim() || typing }}
-            disabled={!draft.trim() || typing}
-            onPress={() => send(draft)}
-            style={[styles.send, (!draft.trim() || typing) && styles.sendOff]}
-          >
-            <IconSlot name="send" size={18} color="textOnDark" />
-          </Touchable>
+          {listenSec !== null ? (
+            <View style={styles.listening} accessibilityLiveRegion="polite">
+              <View style={styles.recDot} />
+              <AppText variant="callout14Regular" color="textPrimary" style={styles.flex}>
+                듣고 있어요…
+              </AppText>
+              <AppText variant="caption12Bold" color="textMuted">
+                {`${mmss(listenSec)} / ${mmss(VOICE_MAX_SEC)}`}
+              </AppText>
+            </View>
+          ) : (
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              autoFocus={focus === '1'}
+              maxLength={MAX_LEN}
+              multiline
+              placeholder="메시지 입력 또는 마이크로 말하기"
+              placeholderTextColor={COLORS.textMuted}
+              accessibilityLabel="메시지 입력"
+              style={[TYPO.callout14Regular, styles.input]}
+            />
+          )}
+          {listenSec !== null ? (
+            <Touchable small accessibilityLabel="음성 입력 멈추기" onPress={() => stopListening(listenSec)} style={[styles.send, styles.stop]}>
+              <IconSlot name="stop" size={18} color="textOnDark" />
+            </Touchable>
+          ) : draft.trim() ? (
+            <Touchable
+              small
+              accessibilityLabel="보내기"
+              accessibilityState={{ disabled: !canSend }}
+              disabled={!canSend}
+              onPress={() => send(draft)}
+              style={[styles.send, !canSend && styles.sendOff]}
+            >
+              <IconSlot name="send" size={18} color="textOnDark" />
+            </Touchable>
+          ) : (
+            <Touchable
+              small
+              accessibilityLabel="음성으로 말하기"
+              accessibilityState={{ disabled: typing }}
+              disabled={typing}
+              onPress={() => setListenSec(0)}
+              style={[styles.send, typing && styles.sendOff]}
+            >
+              <IconSlot name="mic" size={18} color="textOnDark" />
+            </Touchable>
+          )}
         </View>
       </View>
     </KeyboardSafe>
@@ -350,4 +437,9 @@ const styles = StyleSheet.create({
   },
   send: { width: 38, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bgForest },
   sendOff: { opacity: 0.4 },
+  stop: { backgroundColor: COLORS.accentDanger },
+  listening: { flex: 1, minHeight: 38, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
+  recDot: { width: 8, height: 8, borderRadius: 999, backgroundColor: COLORS.accentDanger },
+  restored: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 4 },
+  restoredLine: { flex: 1, height: 1, backgroundColor: COLORS.borderDefault },
 });

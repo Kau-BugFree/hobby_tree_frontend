@@ -3,6 +3,12 @@
  * - 더미 제거: Status Bar, Home Indicator
  * - 레이아웃: Hero(그라데이션 글로우 + 세계수) / 본문 / 하단 소셜 로그인 버튼 2개 (고정)
  * - 로그인은 카카오·구글 소셜 로그인만 지원 (백엔드 명세 API-01: provider = KAKAO | GOOGLE)
+ * - 버튼은 각 사 디자인 가이드에 맞춤 (11/18 윤여빈 요청)
+ *   · 카카오: 배경 #FEE500, 검정 말풍선, 글자 검정 85%, 모서리 12, 문구 ‘카카오 로그인’
+ *     https://developers.kakao.com/docs/ko/kakaologin/design-guide
+ *   · Google(라이트): 배경 #FFFFFF, 테두리 #747775 1px, 글자 #1F1F1F, 표준 4색 G, 문구 ‘Google 계정으로 로그인’
+ *     https://developers.google.com/identity/branding-guidelines
+ *   · 두 버튼 크기·모양을 같게 (한쪽 강조 금지), 아이콘+글자 묶음 가운데 정렬(간격 10)
  * API-01 소셜 로그인 → 신규·온보딩 미완료는 온보딩, 기존 회원은 홈
  * API-04 탈퇴 후 30일 안이면 복구 안내 → 복구하기
  * 개발용 빌드: 카카오·구글 SDK 로그인 창 → 토큰 자동 / Expo Go·웹: .env.local 개발용 토큰 / 둘 다 없으면 '체험 모드'
@@ -32,10 +38,10 @@ interface LoginOption {
 
 /** 소셜 브랜드 색상은 디자인 토큰이 아닌 각 사 가이드 색 */
 const LOGIN_OPTIONS: LoginOption[] = [
-  { id: 'KAKAO', label: '카카오로 시작하기', bg: COLORS.kakaoBg, fg: COLORS.kakaoFg, icon: require('../../../assets/brand/kakao.png') },
+  { id: 'KAKAO', label: '카카오 로그인', bg: COLORS.kakaoBg, fg: COLORS.kakaoFg, icon: require('../../../assets/brand/kakao.png') },
   {
     id: 'GOOGLE',
-    label: 'Google로 시작하기',
+    label: 'Google 계정으로 로그인',
     bg: COLORS.googleBg,
     fg: COLORS.googleFg,
     border: COLORS.googleBorder,
@@ -222,5 +228,6 @@ const styles = StyleSheet.create({
   modalBtn: { alignSelf: 'stretch', marginTop: 6 },
   loginInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   loginIcon: { width: 20, height: 20 },
-  loginBtn: { borderRadius: 999, minHeight: 56, paddingVertical: 17, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  // 카카오 디자인 가이드: 모서리 12 — Google도 같은 모양으로 맞춤
+  loginBtn: { borderRadius: 12, minHeight: 54, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
 });

@@ -27,10 +27,11 @@ import {
 import { STEP3 } from '../../data/onboarding';
 import { errorMessage } from '../../api/client';
 import { updateProfile } from '../../api/endpoints';
-import { ageToServer, NICKNAME_MAX, nicknameError } from '../../api/mappers';
+import { ageToServer, NICKNAME_MAX } from '../../api/mappers';
 import { nextSelection, useAppState } from '../../lib/appState';
 import { useSession } from '../../lib/session';
 import { recordConsent } from '../../lib/locationConsent';
+import { NICKNAME_GUIDE, useNicknameCheck } from '../../lib/nickname';
 import { back, go } from '../../lib/nav';
 import { COLORS, TYPO } from '../../theme';
 
@@ -53,8 +54,9 @@ export default function ProfileScreen() {
   const patch = (p: Partial<ProfileData>) => setProfile((cur) => ({ ...cur, ...p }));
   const { signedIn } = useSession();
   const [saving, setSaving] = useState(false);
-  const nickErr = signedIn ? nicknameError(nick) : null;
-  const canSave = nick.trim().length > 0 && interests.length > 0 && !nickErr && !saving;
+  // 11/16 회의: 규칙·중복 확인 결과를 입력칸 밑 작은 글씨로 (모달 없음)
+  const nickCheck = useNicknameCheck(nick, state.userName);
+  const canSave = nickCheck.ok && interests.length > 0 && !saving;
 
   const onSave = async () => {
     if (signedIn) {
@@ -121,17 +123,26 @@ export default function ProfileScreen() {
             value={nick}
             onChangeText={(t) => setNick(t.replace(/\s/g, '').slice(0, NICK_MAX))}
             maxLength={NICK_MAX}
-            placeholder="닉네임"
+            placeholder="2~12자 닉네임"
             placeholderTextColor={COLORS.textMuted}
             returnKeyType="done"
+            autoCapitalize="none"
+            autoCorrect={false}
             accessibilityLabel="닉네임"
-            style={[TYPO.body16Regular, styles.input]}
+            style={[
+              TYPO.body16Regular,
+              styles.input,
+              nickCheck.bad && styles.inputError,
+              nickCheck.status === 'available' && styles.inputOk,
+            ]}
           />
-          {nickErr ? (
-            <AppText variant="caption12Medium" color="accentDanger">
-              {nickErr}
-            </AppText>
-          ) : null}
+          <AppText
+            variant="caption12Medium"
+            color={nickCheck.bad ? 'accentDanger' : nickCheck.status === 'available' ? 'brandPrimary' : 'textMuted'}
+            accessibilityLiveRegion="polite"
+          >
+            {nickCheck.message ?? NICKNAME_GUIDE}
+          </AppText>
         </View>
         <View style={styles.field}>
           <FieldLabel label="연령대" hint="선택" />
@@ -221,6 +232,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.bgApp,
   },
   field: { gap: 8 },
+  inputError: { borderColor: COLORS.accentDanger },
+  inputOk: { borderColor: COLORS.brandPrimary },
   input: {
     height: 52,
     paddingHorizontal: 16,
