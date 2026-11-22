@@ -11,6 +11,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastProvider } from '../components';
 import { AppStateProvider } from '../lib/appState';
+import { ForestProvider } from '../lib/forest';
+import { SessionProvider } from '../lib/session';
 import { COLORS } from '../theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -62,6 +64,8 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AppStateProvider>
+        <SessionProvider>
+        <ForestProvider>
         <ToastProvider>
           <StatusBar style="dark" />
           <Stack
@@ -82,6 +86,8 @@ export default function RootLayout() {
             <Stack.Screen name="together/booked" options={{ animation: 'fade' }} />
           </Stack>
         </ToastProvider>
+        </ForestProvider>
+        </SessionProvider>
       </AppStateProvider>
     </SafeAreaProvider>
   );

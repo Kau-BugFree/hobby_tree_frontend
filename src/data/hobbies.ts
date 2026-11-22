@@ -4,6 +4,7 @@
  */
 import type { HobbyKey, TreeStageNo } from '../components/Graphics';
 import type { TagTone } from '../components/Tag';
+import type { ServerTreeInfo } from '../lib/forest';
 
 export interface ActivityStep {
   title: string;
@@ -45,6 +46,8 @@ export interface TreeData {
   /** 지금 하는 활동 진행률 0~1 */
   progress: number;
   recommendations: StageRecommendation[];
+  /** 서버 나무일 때만 (API-18·20·22) — lib/forest.tsx */
+  server?: ServerTreeInfo;
 }
 
 export const ACTIVITIES: Record<string, ActivityDetail> = {
@@ -195,6 +198,9 @@ export const TREES: TreeData[] = [
 
 export const MAX_TREE_SLOTS = 5;
 
+/** 서비스에서 지원하는 취미 3개 (서버 카테고리: 요리 · 악기 · 독서 — 팀 결정) */
+export const SUPPORTED_HOBBIES: HobbyKey[] = ['요리', '악기', '독서'];
+
 /** URL 파라미터(hobby) → 나무 */
 export const treeByHobby = (hobby: string | undefined) => TREES.find((t) => t.hobby === hobby) ?? TREES[0];
 
@@ -225,7 +231,7 @@ export interface NoticeItem {
 }
 
 export const NOTICES: NoticeItem[] = [
-  { id: 'coffee', title: '커피 나무 · 활동 1개만 더 하면 묘목이 돼요', sub: '지금 하는 활동 이어서 하기', icon: 'sprout', href: '/home/activity/커피' },
+  { id: 'cooking', title: '요리 나무 · 활동 2개만 더 하면 새싹이 돼요', sub: '지금 하는 활동 이어서 하기', icon: 'sprout', href: '/home/activity/요리' },
   { id: 'class', title: '브루잉 입문 원데이 클래스 · 토 14:00', sub: '제휴 클래스 일정 안내 · 4자리 남음', icon: 'calendar', href: '/together/class/brewing' },
   { id: 'reading', title: '독서 나무 · 4단계 활동을 둘러볼 수 있어요', sub: '체험에서 단계별 활동 보기', icon: 'book', href: '/experience' },
 ];

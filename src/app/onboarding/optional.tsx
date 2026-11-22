@@ -1,63 +1,46 @@
 /**
  * O-05-1 선택 설정 · Q11~Q14
- * - Q14 자유 입력(TextInput) → KeyboardAvoidingView 적용
- * - 해석 결과(Parsed constraints)는 AI 파트 응답을 표시하는 자리 (현재는 MOCK)
+ * - Q14 자유 입력(TextInput) → questionnaire.context_text 로 저장 (answers 안이 아님)
+ * - 추천 엔진은 자유 입력을 자동으로 해석하지 않는다 → 글이 있으면 추천 결과가 ‘조건 확인 필요(needs_review)’로 온다
+ *   그래서 화면에서 ‘이렇게 이해했어요’ 같은 해석 결과를 지어내지 않고, 확인이 필요하다고만 안내한다
  */
 import React from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
-import { AppText, ChipGroup, IconSlot, InfoNote, QuestionHead } from '../../components';
+import { AppText, IconSlot, InfoNote, QuestionHead } from '../../components';
 import { StepScreen } from '../../components/onboarding/StepScreen';
 import { OPTIONAL } from '../../data/onboarding';
 import { useAppState } from '../../lib/appState';
 import { COLORS, TYPO } from '../../theme';
 
-/** TODO(AI): 자유 입력을 서버의 제약 조건 추출 API로 보내 받은 결과로 교체 */
-const MOCK_PARSED = ['보유 · 기타', '시간대 · 밤', '제외 · 새 장비 구매'];
-const MAX_LEN = 200;
-
 function FreeTextQuestion() {
-  const { state, update, setAnswer } = useAppState();
+  const { state, update } = useAppState();
+  const max = state.server.options?.questionnaire?.contextTextMaxLength ?? 200;
+  const filled = state.freeText.trim().length > 0;
   return (
     <View style={styles.q}>
-      <QuestionHead code="Q14" rule="자유 입력" title="추천할 때 더 고려했으면 하는 점이 있나요?" />
+      <QuestionHead code="Q14" rule="자유 입력 · 선택" title="추천할 때 더 고려했으면 하는 점이 있나요?" />
       <View style={styles.input}>
         <TextInput
           value={state.freeText}
-          onChangeText={(t) => update({ freeText: t.slice(0, MAX_LEN) })}
+          onChangeText={(t) => update({ freeText: t.slice(0, max) })}
           multiline
-          maxLength={MAX_LEN}
+          maxLength={max}
           placeholder="예: 밤에만 할 수 있어요"
           placeholderTextColor={COLORS.textMuted}
           style={[TYPO.callout14Regular, styles.textInput]}
           accessibilityLabel="추천할 때 더 고려했으면 하는 점"
         />
         <AppText variant="micro11Bold" color="textMuted" align="right">
-          {`${state.freeText.length} / ${MAX_LEN}`}
+          {`${state.freeText.length} / ${max}`}
         </AppText>
       </View>
-      {state.freeText.trim().length > 0 ? (
-        <View style={styles.parsed}>
-          <View style={styles.parsedHead}>
-            <IconSlot name="spark" size={16} color="brandPrimary" />
-            <AppText variant="caption12Bold" color="brandDeep">
-              이렇게 이해했어요 · 맞는지 확인해 주세요
-            </AppText>
-          </View>
-          <View style={styles.pills}>
-            {MOCK_PARSED.map((p) => (
-              <View key={p} style={styles.pill}>
-                <AppText variant="caption12Bold" color="textPrimary">
-                  {p}
-                </AppText>
-              </View>
-            ))}
-          </View>
-          <ChipGroup
-            options={['맞아요', '고칠게요'] as const}
-            value={(state.answers.parseConfirm as '맞아요' | '고칠게요') ?? null}
-            onChange={(v) => setAnswer('parseConfirm', v)}
-          />
+      {filled ? (
+        <View style={styles.review}>
+          <IconSlot name="info" size={16} color="brandPrimary" />
+          <AppText variant="caption12Medium" color="textBody" style={styles.flex}>
+            적어 주신 내용은 자동으로 해석하지 않아요. 추천 전에 조건을 한 번 더 확인하는 단계가 나와요.
+          </AppText>
         </View>
       ) : null}
       <InfoNote text="수치·알레르기·건강 상태는 문장만 보고 만들어 내지 않아요." />
@@ -69,9 +52,10 @@ export default function OnboardingOptional() {
   return (
     <StepScreen
       step={OPTIONAL}
-      next="/onboarding/summary"
+      next="/onboarding/terms"
       nextLabel="저장하고 추천 받기"
-      secondary={{ label: '건너뛰기', href: '/onboarding/summary' }}
+      nextToast={{ title: '답변을 저장했어요', sub: '언제든 MY에서 바꿀 수 있어요', icon: 'check' }}
+      secondary={{ label: '건너뛰기', href: '/onboarding/terms' }}
       extra={<FreeTextQuestion />}
       keyboard
     />
@@ -90,8 +74,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.brandPrimary,
   },
   textInput: { color: COLORS.textPrimary, minHeight: 44, padding: 0, textAlignVertical: 'top', includeFontPadding: false },
-  parsed: { gap: 10, padding: 14, borderRadius: 18, backgroundColor: COLORS.bgGreenSoft },
-  parsedHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  pill: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 999, backgroundColor: COLORS.bgSurface },
+  flex: { flex: 1 },
+  review: { flexDirection: 'row', gap: 8, padding: 14, borderRadius: 18, backgroundColor: COLORS.bgGreenSoft },
+
 });

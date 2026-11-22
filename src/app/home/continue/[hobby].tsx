@@ -7,10 +7,35 @@ import React from 'react';
 
 import { AppText, Button, HobbyIcon, IconTile, OverlayDialog } from '../../../components';
 import { ACTIVITIES, treeByHobby } from '../../../data/hobbies';
+import { useTreeByParam } from '../../../lib/forest';
 import { back, swap } from '../../../lib/nav';
 
 export default function ContinueConfirm() {
-  const { hobby } = useLocalSearchParams<{ hobby: string }>();
+  const { hobby, userHobbyId } = useLocalSearchParams<{ hobby: string; userHobbyId?: string }>();
+  const live = useTreeByParam(hobby, userHobbyId);
+  // 서버 나무: 진행 중 기록(API-20 currentActivityRecord)으로 이어하기
+  const cur = live.server?.current;
+  if (live.server && cur) {
+    return (
+      <OverlayDialog>
+        <IconTile size={48} radius={16}>
+          <HobbyIcon hobby={live.hobby} size={22} />
+        </IconTile>
+        <AppText variant="headline18Bold" color="textPrimary" align="center">
+          {`${live.name} 취미를 이어서 하시겠습니까?`}
+        </AppText>
+        <AppText variant="callout14Regular" color="textBody" align="center">
+          {`‘${cur.title ?? '진행 중인 활동'}’\n${live.server.stageNumber}단계 · 진행 ${cur.progressPercent ?? 0}%`}
+        </AppText>
+        <Button
+          label="이어서 하기"
+          onPress={() => swap(`/home/activity/${encodeURIComponent(live.hobby)}?userHobbyId=${live.server!.userHobbyId}&recordId=${cur.recordId}&activityId=${cur.activityId}`)}
+          style={{ marginTop: 4 }}
+        />
+        <Button label="취소" variant="ghost" onPress={back} />
+      </OverlayDialog>
+    );
+  }
   const tree = treeByHobby(hobby);
   const a = ACTIVITIES[tree.currentActivityId];
   return (

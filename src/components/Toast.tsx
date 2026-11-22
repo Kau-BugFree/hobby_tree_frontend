@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, StyleSheet, View } from 'react-native';
+import { FullWindowOverlay } from 'react-native-screens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, SHADOWS } from '../theme';
@@ -24,7 +25,7 @@ const DURATION_MS = 1800;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [msg, setMsg] = useState<ToastMessage | null>(null);
-  const [opacity] = useState(() => new Animated.Value(0));
+  const opacity = useRef(new Animated.Value(0)).current;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 
@@ -51,26 +52,37 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={show}>
       {children}
       {msg ? (
-        <Animated.View pointerEvents="box-none" style={[styles.host, { bottom: insets.bottom + 110, opacity }]}>
-          <Touchable onPress={hide} style={styles.toast} accessibilityRole="alert">
-            <View style={styles.icon}>
-              <IconSlot name={msg.icon ?? 'check'} size={15} color="textOnDark" />
-            </View>
-            <View style={styles.texts}>
-              <AppText variant="callout14Bold" color="textOnDark">
-                {msg.title}
-              </AppText>
-              {msg.sub ? (
-                <AppText variant="caption12Medium" color="textOnDarkMuted">
-                  {msg.sub}
+        <ToastLayer>
+          <Animated.View pointerEvents="box-none" style={[styles.host, { bottom: insets.bottom + 110, opacity }]}>
+            <Touchable onPress={hide} style={styles.toast} accessibilityRole="alert">
+              <View style={styles.icon}>
+                <IconSlot name={msg.icon ?? 'check'} size={15} color="textOnDark" />
+              </View>
+              <View style={styles.texts}>
+                <AppText variant="callout14Bold" color="textOnDark">
+                  {msg.title}
                 </AppText>
-              ) : null}
-            </View>
-          </Touchable>
-        </Animated.View>
+                {msg.sub ? (
+                  <AppText variant="caption12Medium" color="textOnDarkMuted">
+                    {msg.sub}
+                  </AppText>
+                ) : null}
+              </View>
+            </Touchable>
+          </Animated.View>
+        </ToastLayer>
       ) : null}
     </ToastContext.Provider>
   );
+}
+
+/**
+ * iOS에서는 오버레이 화면(더보기·공유 시트)이 앱 화면보다 위 '별도 창'에 떠서
+ * 일반 View로 그린 토스트가 시트 뒤에 가려졌다. FullWindowOverlay는 항상 맨 위 창에 그린다.
+ * (Android·웹은 같은 화면 계층이라 그대로 그린다)
+ */
+function ToastLayer({ children }: { children: React.ReactNode }) {
+  return Platform.OS === 'ios' ? <FullWindowOverlay>{children}</FullWindowOverlay> : <>{children}</>;
 }
 
 const styles = StyleSheet.create({

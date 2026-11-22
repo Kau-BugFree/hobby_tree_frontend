@@ -14,7 +14,12 @@ const STAGES: TreeStageNo[] = [0, 1, 2, 3, 4, 5];
 
 export default function OnboardingPlanted() {
   const { state } = useAppState();
-  const n = state.picked.length;
+  // 서버 추천에서 고른 취미면 서버 이름(예: 홈베이킹)으로 보여 준다
+  const serverNames = (state.server.recommendation?.items ?? [])
+    .filter((i) => state.server.pickedHobbyIds.includes(i.hobbyId))
+    .map((i) => i.name);
+  const names: string[] = serverNames.length ? serverNames : state.picked;
+  const n = names.length;
   return (
     <Screen
       bg="bgForest"
@@ -23,12 +28,12 @@ export default function OnboardingPlanted() {
       contentStyle={styles.content}
     >
       <View style={styles.seeds}>
-        {state.picked.map((h, i) => (
+        {names.map((h, i) => (
           <TreeStage key={h} stage={0} scale={110 / 300} style={i > 0 ? styles.overlap : undefined} />
         ))}
       </View>
       <View style={styles.tags}>
-        {state.picked.map((h) => (
+        {names.map((h) => (
           <Tag key={h} label={`${h} 씨앗`} tone="onDark" />
         ))}
       </View>

@@ -3,7 +3,7 @@
  * - 앨범에서 선택 → 시스템 사진 선택기(M-10 대체, iOS 14+ PHPicker는 권한 알림 없음)
  * - 사진 찍기 → 카메라 권한(M-11 시스템 알림) → 시스템 카메라(M-12 대체)
  * - 기본 이미지로 되돌리기 → M-13 확인창 (SWAP)
- * TODO(API): 고른 사진은 POST /me/profile-photo (presigned URL 업로드) 후 받은 URL만 저장
+ * 로그인 상태: 고른 사진 → API-08 업로드 URL → 직접 PUT → API-06 profileImageKey (lib/profileImage.ts)
  */
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
@@ -11,6 +11,8 @@ import { Linking, StyleSheet, View } from 'react-native';
 
 import { AppText, Button, Divider, IconSlot, OverlaySheet, Touchable, useToast } from '../../components';
 import { useAppState } from '../../lib/appState';
+import { uploadProfileImage } from '../../lib/profileImage';
+import { useSession } from '../../lib/session';
 import { back, swap } from '../../lib/nav';
 import { ColorToken } from '../../theme';
 
@@ -51,10 +53,26 @@ function OptionRow({ item, disabled, onPress }: { item: PhotoOption; disabled?: 
 export default function PhotoSheet() {
   const { state, update } = useAppState();
   const toast = useToast();
+  const { signedIn } = useSession();
+  const [busy, setBusy] = React.useState(false);
 
-  const apply = (res: ImagePicker.ImagePickerResult) => {
+  const apply = async (res: ImagePicker.ImagePickerResult) => {
     if (res.canceled || !res.assets[0]) return;
-    update({ profilePhotoUri: res.assets[0].uri });
+    const asset = res.assets[0];
+    if (signedIn) {
+      setBusy(true);
+      try {
+        const url = await uploadProfileImage(asset);
+        update({ profilePhotoUri: url ?? asset.uri });
+      } catch (e) {
+        toast({ title: '사진을 바꾸지 못했어요', sub: e instanceof Error ? e.message : undefined, icon: 'info' });
+        return;
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      update({ profilePhotoUri: asset.uri });
+    }
     back();
     toast({ title: '프로필 사진을 바꿨어요', icon: 'check' });
   };
@@ -89,7 +107,7 @@ export default function PhotoSheet() {
       </View>
       <View>
         {OPTIONS.map((o) => (
-          <OptionRow key={o.key} item={o} disabled={o.key === 'reset' && !state.profilePhotoUri} onPress={handlers[o.key]} />
+          <OptionRow key={o.key} item={o} disabled={busy || (o.key === 'reset' && !state.profilePhotoUri)} onPress={handlers[o.key]} />
         ))}
       </View>
       <Button label="취소" variant="ghost" onPress={back} />

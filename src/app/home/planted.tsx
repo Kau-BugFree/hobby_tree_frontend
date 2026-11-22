@@ -4,13 +4,15 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText, Button, IconSlot, Screen, TagRow, Touchable, TreeStage } from '../../components';
-import { MAX_TREE_SLOTS, TREES } from '../../data/hobbies';
+import { useForest } from '../../lib/forest';
 import { reset } from '../../lib/nav';
 import { COLORS } from '../../theme';
 
 export default function PlantedScreen() {
-  const { name = '러닝', first = '빠르게 걷기 20분' } = useLocalSearchParams<{ name?: string; first?: string }>();
-  const count = TREES.length + 1;
+  const { name = '러닝', first } = useLocalSearchParams<{ name?: string; first?: string }>();
+  const { trees, live, maxTrees: MAX_TREE_SLOTS } = useForest();
+  // 서버: 심은 뒤 다시 불러온 목록 그대로 / 체험 모드: 가짜 목록 + 1
+  const count = live ? trees.length : trees.length + 1;
   return (
     <Screen
       bg="bgForest"
@@ -40,7 +42,7 @@ export default function PlantedScreen() {
         {`${name} 씨앗을 심었어요`}
       </AppText>
       <AppText variant="callout14Regular" color="textOnDarkMuted" align="center">
-        {`같은 단계 활동 3개를 마치면 새싹이 돼요.\n첫 활동은 ‘${first}’이에요.`}
+        {first ? `같은 단계 활동 3개를 마치면 새싹이 돼요.\n첫 활동은 ‘${first}’이에요.` : '같은 단계 활동 3개를 마치면 한 단계 자라요.\n홈에서 첫 활동을 골라 보세요.'}
       </AppText>
       {count >= MAX_TREE_SLOTS ? (
         <View style={styles.full}>

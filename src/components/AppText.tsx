@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TextProps, TextStyle } from 'react-native';
 
+import { MAX_FONT_SCALE } from '../lib/layout';
 import { COLORS, ColorToken, TYPO, TypoToken } from '../theme';
 
 export interface AppTextProps extends TextProps {
@@ -13,6 +14,7 @@ export interface AppTextProps extends TextProps {
 export function AppText({ variant = 'body16Regular', color = 'textPrimary', align, style, ...rest }: AppTextProps) {
   return (
     <Text
+      maxFontSizeMultiplier={MAX_FONT_SCALE}
       {...rest}
       style={[styles.base, TYPO[variant], { color: COLORS[color] }, align ? { textAlign: align } : null, style]}
     />

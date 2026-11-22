@@ -10,9 +10,27 @@ import { AppText, Screen, TagRow, TopBar } from '../../../components';
 import { AskCoachButton, DoneButton, StepList, TimerCard } from '../../../components/activity/ActivityParts';
 import { ACTIVITIES, treeByHobby } from '../../../data/hobbies';
 import { go } from '../../../lib/nav';
+import { useSession } from '../../../lib/session';
+import { ServerActivityRun } from '../../../components/server/ServerActivityRun';
 import { COLORS } from '../../../theme';
 
-export default function ActivityScreen() {
+/** 서버 나무(userHobbyId) + 활동(activityId) 또는 기록(recordId)으로 들어오면 서버판 (API-26~28) */
+export default function ActivityRoute() {
+  const p = useLocalSearchParams<{ hobby: string; userHobbyId?: string; activityId?: string; recordId?: string }>();
+  const { signedIn } = useSession();
+  if (signedIn && (Number(p.activityId) > 0 || Number(p.recordId) > 0)) {
+    return (
+      <ServerActivityRun
+        userHobbyId={Number(p.userHobbyId) || undefined}
+        activityId={Number(p.activityId) || undefined}
+        recordId={Number(p.recordId) || undefined}
+      />
+    );
+  }
+  return <ActivityScreen />;
+}
+
+function ActivityScreen() {
   const { hobby } = useLocalSearchParams<{ hobby: string }>();
   const tree = treeByHobby(hobby);
   const a = ACTIVITIES[tree.currentActivityId];

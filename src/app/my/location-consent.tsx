@@ -5,6 +5,7 @@
  * - ‘동의하고 현재 위치 찾기’: 두 동의 모두 체크해야 활성 → OS 권한(M-09) → 시·구 저장 → M-03
  *   권한 거부·실패 → M-08 직접 입력으로 교체
  * - ‘직접 입력할게요’ → M-08
+ * 로그인 상태: API-43 위치 동의 기록(API-10 안내문 버전) → 현재 좌표 → API-42 활동 지역 설정(DEVICE · 서버가 지역으로 변환, 좌표 저장 안 함)
  */
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -13,7 +14,11 @@ import { AppText, Button, IconSlot, IconTile, InfoNote, OverlaySheet, useToast }
 import { CheckRow } from '../../components/my/MyParts';
 import { LOCATION_FACTS, LegalRow } from '../../data/terms';
 import { useAppState } from '../../lib/appState';
-import { locateDistrict } from '../../lib/location';
+import { errorMessage } from '../../api/client';
+import { setLocation } from '../../api/endpoints';
+import { currentCoords, locateDistrict } from '../../lib/location';
+import { recordConsent } from '../../lib/locationConsent';
+import { useSession } from '../../lib/session';
 import { back, go, swap } from '../../lib/nav';
 import { COLORS } from '../../theme';
 
@@ -31,15 +36,41 @@ function FactRow({ row }: { row: LegalRow }) {
 }
 
 export default function LocationConsentSheet() {
-  const { update } = useAppState();
+  const { state, update } = useAppState();
+  const { signedIn } = useSession();
   const toast = useToast();
   const [agree, setAgree] = useState({ terms: false, personal: false });
   const [busy, setBusy] = useState(false);
   const ready = agree.terms && agree.personal && !busy;
 
-  const onAgree = async () => {
+  /** 서버: 동의 기록 → 좌표 → 지역 설정 */
+  const onAgreeServer = async () => {
     setBusy(true);
-    // TODO(API): POST /me/consents { location_terms: '1.0', personal_location: '1.0', agreedAt }
+    try {
+      const consent = await recordConsent(state.server.options, true);
+      update({ locationConsent: true });
+      const pos = await currentCoords();
+      if (!pos.ok) {
+        swap('/my/region');
+        toast({ title: pos.reason === 'denied' ? '위치 권한이 꺼져 있어요' : '현재 위치를 찾지 못했어요', sub: '지역을 직접 입력해 주세요', icon: 'pin' });
+        return;
+      }
+      const res = await setLocation({ source: 'DEVICE', latitude: pos.latitude, longitude: pos.longitude, consentVersion: consent.version });
+      const region = res.location?.fullName ?? res.location?.name ?? state.region;
+      update({ region });
+      back();
+      toast({ title: `지역을 ‘${region}’로 정했어요`, sub: '좌표는 지역을 찾는 데만 쓰고 저장하지 않아요', icon: 'pin' });
+    } catch (e) {
+      swap('/my/region');
+      toast({ title: '현재 위치로 지역을 정하지 못했어요', sub: `${errorMessage(e)} · 지역을 직접 입력해 주세요`, icon: 'pin' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onAgree = async () => {
+    if (signedIn) return onAgreeServer();
+    setBusy(true);
     const res = await locateDistrict();
     setBusy(false);
     if (res.ok) {

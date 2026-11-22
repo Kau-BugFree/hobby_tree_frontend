@@ -2,7 +2,7 @@
  * 하비 코치 공통 서브 컴포넌트 (C-01 패널 · C-02 대화)
  * - CoachAvatar, MeBubble, CoachBubble(출처 + 관련 활동), TypingBubble, QuickPill
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import type { ChatMessage } from '../../data/chat';
@@ -50,18 +50,27 @@ export function CoachBubble({ message, tone = 'surface' }: { message: Pick<ChatM
       {linked ? (
         <View style={styles.linked}>
           <IconSlot name="leaf" size={16} color="brandDeep" />
-          <AppText variant="caption12Bold" color="textPrimary" style={styles.flex}>
-            {`관련 활동 · ${linked.title} (${linked.stage}단계)`}
-          </AppText>
-          <Touchable
-            accessibilityLabel={`${linked.title} 활동 보기`}
-            onPress={() => go(`/experience/stage?hobby=${encodeURIComponent(linked.hobby)}&stage=${linked.stage}`)}
-            style={styles.linkedBtn}
-          >
-            <AppText variant="caption12Bold" color="textOnDark">
-              활동 보기
+          <View style={styles.flex}>
+            <AppText variant="caption12Bold" color="textPrimary">
+              {linked.stage ? `관련 활동 · ${linked.title} (${linked.stage}단계)` : `관련 활동 · ${linked.title}`}
             </AppText>
-          </Touchable>
+            {linked.reason ? (
+              <AppText variant="micro11Bold" color="textMuted">
+                {linked.reason}
+              </AppText>
+            ) : null}
+          </View>
+          {linked.stage ? (
+            <Touchable
+              accessibilityLabel={`${linked.title} 활동 보기`}
+              onPress={() => go(`/experience/stage?hobby=${encodeURIComponent(linked.hobby)}&stage=${linked.stage}`)}
+              style={styles.linkedBtn}
+            >
+              <AppText variant="caption12Bold" color="textOnDark">
+                활동 보기
+              </AppText>
+            </Touchable>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -70,7 +79,7 @@ export function CoachBubble({ message, tone = 'surface' }: { message: Pick<ChatM
 
 /** Figma "Typing" (점 3개). 점이 차례로 깜빡인다. */
 export function TypingBubble() {
-  const [dots] = useState(() => [0, 1, 2].map(() => new Animated.Value(0.3)));
+  const dots = useRef([0, 1, 2].map(() => new Animated.Value(0.3))).current;
   useEffect(() => {
     const loop = Animated.loop(
       Animated.stagger(
@@ -119,7 +128,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 6,
     borderBottomLeftRadius: 20,
   },
-  coachCol: { flex: 1, gap: 8 },
+  // flex: 1(기준 0)이면 세로로 쌓이는 패널 안에서 높이가 0으로 눌려 글이 안 보인다 → 내용 높이 기준으로 늘고 줄게
+  coachCol: { flexGrow: 1, flexShrink: 1, minWidth: 0, gap: 8 },
   coach: {
     gap: 8,
     paddingVertical: 11,

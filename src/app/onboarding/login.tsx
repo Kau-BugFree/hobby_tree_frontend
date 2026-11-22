@@ -1,34 +1,134 @@
 /**
  * O-01 로그인
  * - 더미 제거: Status Bar, Home Indicator
- * - 레이아웃: Hero(그라데이션 글로우 + 세계수) / 본문 / 하단 로그인 버튼 3개 (고정)
+ * - 레이아웃: Hero(그라데이션 글로우 + 세계수) / 본문 / 하단 소셜 로그인 버튼 2개 (고정)
+ * - 로그인은 카카오·구글 소셜 로그인만 지원 (백엔드 명세 API-01: provider = KAKAO | GOOGLE)
+ * - 버튼은 각 사 디자인 가이드에 맞춤 (11/18 윤여빈 요청)
+ *   · 카카오: 배경 #FEE500, 검정 말풍선, 글자 검정 85%, 모서리 12, 문구 ‘카카오 로그인’
+ *     https://developers.kakao.com/docs/ko/kakaologin/design-guide
+ *   · Google(라이트): 배경 #FFFFFF, 테두리 #747775 1px, 글자 #1F1F1F, 표준 4색 G, 문구 ‘Google 계정으로 로그인’
+ *     https://developers.google.com/identity/branding-guidelines
+ *   · 두 버튼 크기·모양을 같게 (한쪽 강조 금지), 아이콘+글자 묶음 가운데 정렬(간격 10)
+ * API-01 소셜 로그인 → 신규·온보딩 미완료는 온보딩, 기존 회원은 홈
+ * API-04 탈퇴 후 30일 안이면 복구 안내 → 복구하기
+ * 개발용 빌드: 카카오·구글 SDK 로그인 창 → 토큰 자동 / Expo Go·웹: .env.local 개발용 토큰 / 둘 다 없으면 '체험 모드'
+ * 로그인에 성공하면 ‘로그인되었습니다!’ 모달 → ‘시작하기’로 온보딩(신규·미완료) 또는 홈(기존)으로 이동
  */
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, Image, ImageSourcePropType, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AppText, IllustrationSlot, Tag, Touchable, TreeStage } from '../../components';
-import { go } from '../../lib/nav';
+import { ApiError, errorMessage } from '../../api/client';
+import type { Provider, RestoreRequiredResult } from '../../api/types';
+import { AppText, Button, ConfirmModal, IllustrationSlot, Tag, Touchable, TreeStage, useToast } from '../../components';
+import { go, reset } from '../../lib/nav';
+import { SocialLoginCancelledError } from '../../lib/socialAuth';
+import { SignInResult, useSession } from '../../lib/session';
 import { COLORS } from '../../theme';
 
 interface LoginOption {
-  id: 'kakao' | 'apple' | 'email';
+  id: Provider;
   label: string;
-  bg: string | null;
+  bg: string;
   fg: string;
+  border?: string;
+  /** 공식 리소스에서 가져온 브랜드 심볼 (assets/brand) */
+  icon: ImageSourcePropType;
 }
 
 /** 소셜 브랜드 색상은 디자인 토큰이 아닌 각 사 가이드 색 */
 const LOGIN_OPTIONS: LoginOption[] = [
-  { id: 'kakao', label: '카카오로 시작하기', bg: COLORS.kakaoBg, fg: COLORS.kakaoFg },
-  { id: 'apple', label: 'Apple로 시작하기', bg: COLORS.appleBg, fg: COLORS.appleFg },
-  { id: 'email', label: '이메일로 시작하기 · 이미 계정이 있어요', bg: null, fg: COLORS.textOnDarkMuted },
+  { id: 'KAKAO', label: '카카오 로그인', bg: COLORS.kakaoBg, fg: COLORS.kakaoFg, icon: require('../../../assets/brand/kakao.png') },
+  {
+    id: 'GOOGLE',
+    label: 'Google 계정으로 로그인',
+    bg: COLORS.googleBg,
+    fg: COLORS.googleFg,
+    border: COLORS.googleBorder,
+    icon: require('../../../assets/brand/google.png'),
+  },
 ];
+
+/** 로그인 성공 모달 */
+function WelcomeModal({ isNew, onStart }: { isNew: boolean; onStart: () => void }) {
+  return (
+    <Modal transparent animationType="fade" visible onRequestClose={onStart} statusBarTranslucent>
+      <View style={styles.dim}>
+        <View style={styles.modal} accessibilityViewIsModal accessibilityRole="alert">
+          <TreeStage stage={1} scale={0.42} />
+          <AppText variant="title22Bold" color="textPrimary" align="center">
+            로그인되었습니다!
+          </AppText>
+          <AppText variant="callout14Regular" color="textBody" align="center">
+            {isNew ? '몇 가지 질문에 답하면 나에게 맞는 첫 취미를 골라 드려요.' : '다시 오셨네요. 키우던 나무를 보러 가요.'}
+          </AppText>
+          <Button label={isNew ? '시작하기' : '홈으로 가기'} onPress={onStart} style={styles.modalBtn} />
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  // TODO(API): 소셜 로그인 SDK 연동 후 신규 가입자는 온보딩, 기존 사용자는 홈 탭으로 분기
-  const onLogin = (_id: LoginOption['id']) => go('/onboarding/step1');
+  const toast = useToast();
+  const { signIn, restore } = useSession();
+  const [busy, setBusy] = useState<Provider | null>(null);
+  /** 로그인 성공 후 모달 → 확인하면 이동할 곳 */
+  const [welcome, setWelcome] = useState<{ href: string; isNew: boolean } | null>(null);
+  /** API-01 AUTH409_1 — 탈퇴한 계정 복구 안내 */
+  const [restoreInfo, setRestore] = useState<RestoreRequiredResult | null>(null);
+  const [restoring, setRestoring] = useState(false);
+
+  /** API-04 복구하기 */
+  const onRestore = async () => {
+    const token = restoreInfo?.restoreToken;
+    if (!token) return setRestore(null);
+    setRestoring(true);
+    try {
+      const res = await restore(token);
+      setRestore(null);
+      afterLogin(res);
+    } catch (e) {
+      setRestore(null);
+      toast({ title: '복구하지 못했어요', sub: errorMessage(e), icon: 'info' });
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const afterLogin = (r: SignInResult) => {
+    if (r.kind === 'ok') {
+      const active = r.memberStatus === 'ACTIVE';
+      setWelcome({ href: active ? '/home' : '/onboarding/step1', isNew: !active });
+      return;
+    }
+    if (r.kind === 'restoreRequired') {
+      // 탈퇴 후 30일 안 → 복구 안내 모달 (기한이 지났으면 복구 불가 안내)
+      setRestore(r.info);
+      return;
+    }
+    // 소셜 SDK 미연결 (Expo Go 등) → 체험 모드
+    toast({ title: '체험 모드로 둘러봐요', sub: '카카오·구글 로그인은 개발용 빌드에서 연결돼요', icon: 'info' });
+    go('/onboarding/step1');
+  };
+
+  const onLogin = async (id: Provider) => {
+    if (busy) return;
+    setBusy(id);
+    try {
+      afterLogin(await signIn(id));
+    } catch (e) {
+      // 로그인 창을 닫은 경우는 조용히 넘어간다
+      if (!(e instanceof SocialLoginCancelledError)) {
+        // 서버 오류도 코드·HTTP 상태를 함께 보여 준다 (BE에 그대로 전달할 수 있게)
+        const detail = e instanceof ApiError ? ` (${e.code} · HTTP ${e.status})` : '';
+        toast({ title: '로그인하지 못했어요', sub: `${e instanceof Error && !('status' in e) ? e.message : errorMessage(e)}${detail}`, icon: 'info' });
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -50,19 +150,60 @@ export default function LoginScreen() {
           <Touchable
             key={o.id}
             accessibilityLabel={o.label}
+            accessibilityState={{ busy: busy === o.id, disabled: !!busy }}
+            disabled={!!busy}
             onPress={() => onLogin(o.id)}
-            style={[styles.loginBtn, o.bg ? { backgroundColor: o.bg } : styles.textBtn]}
+            style={[styles.loginBtn, { backgroundColor: o.bg }, o.border ? { borderWidth: 1, borderColor: o.border } : null]}
           >
-            <AppText
-              variant={o.bg ? 'body16Bold' : 'callout14Bold'}
-              style={{ color: o.fg }}
-              align="center"
-            >
-              {o.label}
-            </AppText>
+            {busy === o.id ? (
+              <ActivityIndicator color={o.fg} />
+            ) : (
+              <View style={styles.loginInner}>
+                <Image source={o.icon} style={styles.loginIcon} resizeMode="contain" accessibilityIgnoresInvertColors />
+                <AppText variant="body16Bold" style={{ color: o.fg }} align="center">
+                  {o.label}
+                </AppText>
+              </View>
+            )}
           </Touchable>
         ))}
       </View>
+      {restoreInfo ? (
+        restoreInfo.restorable && restoreInfo.restoreToken ? (
+          <ConfirmModal
+            visible
+            tree={1}
+            title="탈퇴한 계정이에요"
+            message="복구하면 키우던 나무와 활동 기록을 그대로 다시 볼 수 있어요."
+            highlight={restoreInfo.restorableUntil ? `${restoreInfo.restorableUntil.slice(0, 10)}까지 복구할 수 있어요` : undefined}
+            confirmLabel="계정 복구하기"
+            cancelLabel="취소"
+            busy={restoring}
+            onConfirm={onRestore}
+            onCancel={() => setRestore(null)}
+          />
+        ) : (
+          <ConfirmModal
+            visible
+            icon="info"
+            title="복구할 수 없는 계정이에요"
+            message="탈퇴 후 30일이 지나 계정을 되살릴 수 없어요."
+            confirmLabel="확인"
+            onConfirm={() => setRestore(null)}
+            onCancel={() => setRestore(null)}
+          />
+        )
+      ) : null}
+      {welcome ? (
+        <WelcomeModal
+          isNew={welcome.isNew}
+          onStart={() => {
+            const href = welcome.href;
+            setWelcome(null);
+            reset(href);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -73,6 +214,20 @@ const styles = StyleSheet.create({
   glow: { position: 'absolute', top: 0, borderWidth: 0, backgroundColor: COLORS.paletteGreen, opacity: 0.35, borderRadius: 0 },
   content: { flex: 1, gap: 12, paddingTop: 8, paddingHorizontal: 28 },
   buttons: { gap: 10, paddingTop: 12, paddingHorizontal: 24 },
-  loginBtn: { borderRadius: 999, paddingVertical: 17, paddingHorizontal: 20, alignItems: 'center' },
-  textBtn: { paddingVertical: 10 },
+  dim: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: COLORS.dim },
+  modal: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: 10,
+    paddingTop: 22,
+    paddingBottom: 20,
+    paddingHorizontal: 22,
+    borderRadius: 28,
+    backgroundColor: COLORS.bgSurface,
+  },
+  modalBtn: { alignSelf: 'stretch', marginTop: 6 },
+  loginInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  loginIcon: { width: 20, height: 20 },
+  // 카카오 디자인 가이드: 모서리 12 — Google도 같은 모양으로 맞춤
+  loginBtn: { borderRadius: 12, minHeight: 54, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
 });

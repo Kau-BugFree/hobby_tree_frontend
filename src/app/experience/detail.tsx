@@ -12,6 +12,8 @@ import { findCard } from '../../data/catalog';
 import { ADS, AdItem } from '../../data/experience';
 import { formatManWon, useAppState, withComma } from '../../lib/appState';
 import { go } from '../../lib/nav';
+import { useSession } from '../../lib/session';
+import { ServerActivity } from '../../components/server/ServerActivity';
 import { COLORS } from '../../theme';
 
 function BulletCard({ title, items }: { title: string; items: string[] }) {
@@ -83,7 +85,15 @@ function AdRow({ ad }: { ad: AdItem }) {
   );
 }
 
-export default function ActivityDetail() {
+/** 로그인 상태 + 서버 활동(activityId)이면 서버판(API-25·31·32·49) */
+export default function DetailRoute() {
+  const p = useLocalSearchParams<{ activityId?: string; userHobbyId?: string }>();
+  const { signedIn } = useSession();
+  if (signedIn && Number(p.activityId) > 0) return <ServerActivity activityId={Number(p.activityId)} userHobbyId={Number(p.userHobbyId) || undefined} />;
+  return <ActivityDetail />;
+}
+
+function ActivityDetail() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { state } = useAppState();
   const found = findCard(id) ?? findCard('cof-2-5');

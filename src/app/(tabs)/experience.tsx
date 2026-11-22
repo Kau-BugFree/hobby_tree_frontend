@@ -24,13 +24,18 @@ import {
 } from '../../components';
 import { cardsOfLevel, catalogOf, minuteRange } from '../../data/catalog';
 import { COMPLETED } from '../../data/experience';
-import { TREES, TreeData } from '../../data/hobbies';
+import { SUPPORTED_HOBBIES, TREES as ALL_TREES, TreeData } from '../../data/hobbies';
+
+/** 체험 탭은 지원 취미 3개(요리·악기·독서)만 보여 준다 */
+const TREES = ALL_TREES.filter((t) => SUPPORTED_HOBBIES.includes(t.hobby));
+import { useCompact } from '../../lib/layout';
 import { go } from '../../lib/nav';
 import { COLORS, shadow } from '../../theme';
 
 const LEVELS: TreeStageNo[] = [0, 1, 2, 3, 4, 5];
 
 function TreeSwitch({ value, onChange }: { value: TreeData['hobby']; onChange: (h: TreeData['hobby']) => void }) {
+  const compact = useCompact();
   return (
     <View style={styles.switch} accessibilityRole="tablist">
       {TREES.map((t) => {
@@ -50,8 +55,9 @@ function TreeSwitch({ value, onChange }: { value: TreeData['hobby']; onChange: (
                 {t.hobby}
               </AppText>
             </View>
-            <AppText variant="micro11Bold" color={on ? 'textOnDarkMuted' : 'textMuted'}>
-              {`${t.stage}단계 ${STAGE_NAME[t.stage]}`}
+            {/* 좁은 화면에선 '3단계 어린 나무'가 두 줄로 넘쳐 잘리므로 단계 숫자만 보여 준다 */}
+            <AppText variant="micro11Bold" color={on ? 'textOnDarkMuted' : 'textMuted'} numberOfLines={1}>
+              {compact ? `${t.stage}단계` : `${t.stage}단계 ${STAGE_NAME[t.stage]}`}
             </AppText>
           </Touchable>
         );
@@ -100,7 +106,7 @@ function StageCard({ level, title, summary, count, range, done, onPress }: Stage
 
 export default function ExperienceScreen() {
   const insets = useSafeAreaInsets();
-  const [hobby, setHobby] = useState<TreeData['hobby']>('커피');
+  const [hobby, setHobby] = useState<TreeData['hobby']>(TREES[0]?.hobby ?? '요리');
   const tree = TREES.find((t) => t.hobby === hobby)!;
   const catalog = catalogOf(hobby);
   const completed = COMPLETED[hobby];

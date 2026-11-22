@@ -16,6 +16,8 @@ import { CatalogCard, cardsOfLevel, catalogOf } from '../../data/catalog';
 import { treeByHobby } from '../../data/hobbies';
 import { DONE_DATES, doneIdsOf, PLANTED_INFO } from '../../data/my';
 import { go, reset } from '../../lib/nav';
+import { useSession } from '../../lib/session';
+import { ServerRoadmap } from '../../components/server/ServerRoadmap';
 import { COLORS, shadow } from '../../theme';
 
 const STAGES: TreeStageNo[] = [0, 1, 2, 3, 4, 5];
@@ -106,7 +108,15 @@ function StageNode({ stage, levelName, cards, doneIds, state, last, onPress }: S
   );
 }
 
-export default function RoadmapScreen() {
+/** 서버 나무(userHobbyId)면 서버판 로드맵 + 나무 관리 (API-20·21·22) */
+export default function RoadmapRoute() {
+  const { userHobbyId } = useLocalSearchParams<{ userHobbyId?: string }>();
+  const { signedIn } = useSession();
+  if (signedIn && Number(userHobbyId) > 0) return <ServerRoadmap userHobbyId={Number(userHobbyId)} />;
+  return <RoadmapScreen />;
+}
+
+function RoadmapScreen() {
   const { hobby } = useLocalSearchParams<{ hobby?: string }>();
   const tree = treeByHobby(hobby);
   const catalog = catalogOf(tree.hobby);
