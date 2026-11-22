@@ -1,6 +1,6 @@
 // HobbyTree 공통 아이콘 (stroke=currentColor → IconSlot의 color로 색이 바뀜)
 // 대부분은 Figma v5 화면(📱 Screens · Flow)의 아이콘에서 뽑았고,
-// plus·minus·play·arrow-right·check-circle·clear·compass·swipe·store·tent·link·mail 은 같은 선 스타일로 직접 그렸어요.
+// plus·minus·play·arrow-right·check-circle·clear·compass·swipe·store·tent·link·mail·card·bank 은 같은 선 스타일로 직접 그렸어요.
 export const ICON_SVG: Record<string, string> = {
   "back": "<svg viewBox=\"0 0 22 22\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M13.75 16.5L8.25 11L13.75 5.5\" stroke=\"currentColor\" stroke-width=\"1.83333\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
   "chev": "<svg viewBox=\"0 0 16 16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M6 4L10 8L6 12\" stroke=\"currentColor\" stroke-width=\"1.33333\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
@@ -53,4 +53,6 @@ export const ICON_SVG: Record<string, string> = {
   "tent": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M12 4L3 20H21L12 4ZM12 4V20M12 12L8.5 20M12 12L15.5 20\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
   "link": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M10 14C10.9 15.2 12.3 15.8 13.8 15.6C14.7 15.5 15.5 15.1 16.1 14.5L19 11.6C20.4 10.1 20.4 7.8 18.9 6.3C17.5 4.9 15.2 4.9 13.7 6.3L12.6 7.4M14 10C13.1 8.8 11.7 8.2 10.2 8.4C9.3 8.5 8.5 8.9 7.9 9.5L5 12.4C3.6 13.9 3.6 16.2 5.1 17.7C6.5 19.1 8.8 19.1 10.3 17.7L11.4 16.6\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
   "mail": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M3.5 6H20.5V18H3.5V6Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M3.5 6.5L12 13L20.5 6.5\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
+  "card": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M3 6.5C3 5.67157 3.67157 5 4.5 5H19.5C20.3284 5 21 5.67157 21 6.5V17.5C21 18.3284 20.3284 19 19.5 19H4.5C3.67157 19 3 18.3284 3 17.5V6.5Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M3 10H21M7 15H10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
+  "bank": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M3 9.5L12 4L21 9.5M4.5 9.5H19.5M5.5 9.5V17M9.8 9.5V17M14.2 9.5V17M18.5 9.5V17M3.5 20H20.5M4.5 17H19.5\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>",
 };

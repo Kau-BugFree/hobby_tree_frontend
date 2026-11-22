@@ -4,7 +4,20 @@ import { SvgXml } from 'react-native-svg';
 
 import { ICON_SVG } from '../assets/iconSvg';
 import { COLORS, ColorToken } from '../theme';
+import { FIGMA_SVG } from '../assets/figmaSvg';
 import { FigmaSvg, hasFigmaSvg } from './FigmaSvg';
+
+/**
+ * 한 가지 색으로만 그려진 Figma 아이콘. 원본 색을 currentColor로 바꿔 color 토큰을 따르게 한다.
+ * (예: 체험 탭에서 선택된 취미 칸은 배경이 진한 초록이라, 원본 초록 아이콘이 배경에 묻혀 사라졌다)
+ * 탭바 아이콘(tab-*)과 나무 그림(tree-*)은 원본 색을 그대로 쓴다.
+ */
+const isTintable = (name: string) => name.startsWith('hobby-') || name === 'chat-spark';
+const tintCache: Record<string, string> = {};
+function tinted(name: string) {
+  if (!tintCache[name]) tintCache[name] = FIGMA_SVG[name].replace(/#[0-9A-Fa-f]{6}\b/g, 'currentColor');
+  return tintCache[name];
+}
 
 export interface IconSlotProps {
   /** Figma 아이콘 노드 이름 (예: chev, bell, search) */
@@ -24,6 +37,18 @@ export function IconSlot({ name, size = 24, width, height, color = 'textMuted', 
   const w = width ?? size;
   const h = height ?? size;
   // Figma 컴포넌트 그래픽이 있으면 그걸 그린다 (hobby-*, tab-*, chat-spark …)
+  if (hasFigmaSvg(name) && isTintable(name)) {
+    return (
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        testID={`icon-${name}`}
+        style={[{ width: w, height: h }, style]}
+      >
+        <SvgXml xml={tinted(name)} width={w} height={h} color={COLORS[color]} />
+      </View>
+    );
+  }
   if (hasFigmaSvg(name)) {
     return (
       <View

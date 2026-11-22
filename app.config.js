@@ -7,7 +7,7 @@
  * - 플러그인 설정을 바꾼 뒤에는 네이티브 폴더를 다시 만들어야 반영된다: npx expo prebuild --clean
  * - Expo Go에서는 SDK가 동작하지 않는다 → 개발용 빌드(npx expo run:android)에서만 SDK 로그인
  */
-const { withAppBuildGradle } = require('expo/config-plugins');
+const { withAppBuildGradle, withProjectBuildGradle } = require('expo/config-plugins');
 
 /**
  * Windows 빌드: 경로 260자 제한 문제
@@ -24,6 +24,26 @@ const withCmakeVersion = (cfg) =>
         /android\s*\{/,
         `android {\n    // hobbytree: cmake version\n    externalNativeBuild { cmake { version "${CMAKE_VERSION}" } }`,
       );
+    }
+    return c;
+  });
+
+/**
+ * 라이브러리 모듈(react-native-reanimated 등)의 C++ 빌드도 같은 CMake를 쓰게 한다
+ * release 빌드는 폴더 이름(RelWithDebInfo)이 길어서, 라이브러리의 기본 CMake(3.22)로는 260자 제한에 걸린다
+ * → android/build.gradle 에서 모든 Android 라이브러리 모듈에 CMake 버전을 지정
+ */
+const withAllCmakeVersion = (cfg) =>
+  withProjectBuildGradle(cfg, (c) => {
+    if (!c.modResults.contents.includes('// hobbytree: cmake version (all modules)')) {
+      c.modResults.contents += `
+// hobbytree: cmake version (all modules)
+subprojects { sub ->
+    sub.plugins.withId('com.android.library') {
+        sub.android.externalNativeBuild.cmake.version = "${CMAKE_VERSION}"
+    }
+}
+`;
     }
     return c;
   });
@@ -65,5 +85,5 @@ module.exports = ({ config }) => {
     ]);
   }
 
-  return withCmakeVersion({ ...config, plugins });
+  return withAllCmakeVersion(withCmakeVersion({ ...config, plugins }));
 };

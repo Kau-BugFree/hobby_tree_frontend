@@ -5,7 +5,8 @@
  * - 추천 조건: 관심 취미(복수) · 꼭 피하고 싶은 조건(복수, ‘없음’ 배타)
  * - 예산: 월/1회 슬라이더 · 시간: 일주일/1회 단일 칩
  * - ‘저장하기’ → 상태 반영 후 M-01로 돌아감. 화면 안 값은 저장 전까지 로컬 상태로만 바뀐다.
- * TODO(API): PATCH /me/profile → 성공 시 추천 다시 계산(POST /recommendations/refresh)
+ * 로그인 상태: 닉네임·연령대는 API-06 PATCH /users/me로 서버에도 저장 (실패하면 화면에 남고 안내)
+ * TODO(API): 나머지 항목(관심 취미·예산 등)은 취향 API-11과 연결 예정
  */
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
@@ -24,7 +25,12 @@ import {
   WEEK_TIME_OPTIONS,
 } from '../../data/my';
 import { STEP3 } from '../../data/onboarding';
+import { errorMessage } from '../../api/client';
+import { updateProfile } from '../../api/endpoints';
+import { ageToServer, NICKNAME_MAX, nicknameError } from '../../api/mappers';
 import { nextSelection, useAppState } from '../../lib/appState';
+import { useSession } from '../../lib/session';
+import { recordConsent } from '../../lib/locationConsent';
 import { back, go } from '../../lib/nav';
 import { COLORS, TYPO } from '../../theme';
 
@@ -33,7 +39,7 @@ const EXCLUDE_GROUP = STEP3.questions.flatMap((q) => q.groups).find((g) => g.key
 const EXCLUDE_OPTIONS = (EXCLUDE_GROUP?.options ?? []).filter((o) => o !== '직접 입력');
 const EXCLUDE_EXCLUSIVE = EXCLUDE_GROUP?.exclusive ?? ['없음'];
 
-const NICK_MAX = 10;
+const NICK_MAX = NICKNAME_MAX;
 
 export default function ProfileScreen() {
   const { state, update, setAnswer } = useAppState();
@@ -45,25 +51,53 @@ export default function ProfileScreen() {
     Array.isArray(state.answers.q09Exclude) ? state.answers.q09Exclude : [],
   );
   const patch = (p: Partial<ProfileData>) => setProfile((cur) => ({ ...cur, ...p }));
-  const canSave = nick.trim().length > 0 && interests.length > 0;
+  const { signedIn } = useSession();
+  const [saving, setSaving] = useState(false);
+  const nickErr = signedIn ? nicknameError(nick) : null;
+  const canSave = nick.trim().length > 0 && interests.length > 0 && !nickErr && !saving;
 
-  const onSave = () => {
+  const onSave = async () => {
+    if (signedIn) {
+      setSaving(true);
+      try {
+        await updateProfile({ nickname: nick.trim(), ageRange: ageToServer(profile.age) });
+      } catch (e) {
+        toast({ title: '프로필을 저장하지 못했어요', sub: errorMessage(e), icon: 'info' });
+        return;
+      } finally {
+        setSaving(false);
+      }
+    }
     update({ userName: nick.trim(), profile, picked: interests.map(interestToHobby) });
     setAnswer('q09Exclude', exclude);
     back();
+    toast({ title: '프로필을 저장했어요', sub: '바뀐 정보로 추천을 다시 맞춰요', icon: 'check' });
   };
 
-  const onWithdraw = () => {
-    // TODO(API): DELETE /me/consents/location → 서버에 저장된 시·구 정보도 함께 삭제
-    update({ locationConsent: false });
-    toast({ title: '위치 정보 동의를 철회했어요', sub: '지역은 직접 입력한 값으로만 써요', icon: 'check' });
+  /** 위치 동의 철회 — 로그인: API-43 agreed:false (기기 위치로 정한 지역이면 서버가 함께 지움) */
+  const onWithdraw = async () => {
+    let cleared = false;
+    if (signedIn) {
+      try {
+        cleared = !!(await recordConsent(state.server.options, false)).locationCleared;
+      } catch (e) {
+        toast({ title: '동의를 철회하지 못했어요', sub: errorMessage(e), icon: 'info' });
+        return;
+      }
+    }
+    update({ locationConsent: false, ...(cleared ? { region: '지역 미설정' } : {}) });
+    toast({
+      title: '위치 정보 동의를 철회했어요',
+      sub: cleared ? '현재 위치로 정한 지역도 지웠어요. 지역을 직접 입력해 주세요' : '지역은 직접 입력한 값으로만 써요',
+      icon: 'check',
+    });
   };
 
   return (
     <Screen
       keyboard
       header={<TopBar title="프로필 관리" />}
-      footer={<Button label="저장하기" disabled={!canSave} onPress={onSave} />}
+      footer={<Button label={saving ? '저장하는 중…' : '저장하기'} disabled={!canSave} onPress={onSave} />}
       contentStyle={styles.content}
     >
       <View style={styles.photo}>
@@ -85,7 +119,7 @@ export default function ProfileScreen() {
           <FieldLabel label="닉네임" right={`${nick.length}/${NICK_MAX}`} />
           <TextInput
             value={nick}
-            onChangeText={(t) => setNick(t.slice(0, NICK_MAX))}
+            onChangeText={(t) => setNick(t.replace(/\s/g, '').slice(0, NICK_MAX))}
             maxLength={NICK_MAX}
             placeholder="닉네임"
             placeholderTextColor={COLORS.textMuted}
@@ -93,6 +127,11 @@ export default function ProfileScreen() {
             accessibilityLabel="닉네임"
             style={[TYPO.body16Regular, styles.input]}
           />
+          {nickErr ? (
+            <AppText variant="caption12Medium" color="accentDanger">
+              {nickErr}
+            </AppText>
+          ) : null}
         </View>
         <View style={styles.field}>
           <FieldLabel label="연령대" hint="선택" />

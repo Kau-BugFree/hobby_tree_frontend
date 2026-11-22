@@ -13,9 +13,19 @@ import { AppText, Button, IconSlot, IllustrationSlot, InfoNote, KeyValue, Screen
 import { classById } from '../../../data/together';
 import { withComma } from '../../../lib/appState';
 import { go } from '../../../lib/nav';
+import { useSession } from '../../../lib/session';
+import { ServerClassDetail } from '../../../components/server/ServerClassDetail';
 import { COLORS, shadow } from '../../../theme';
 
-export default function ClassDetail() {
+/** 로그인 상태 + 숫자 id(서버 experienceId)면 서버판 (API-36·37·40) */
+export default function ClassRoute() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { signedIn } = useSession();
+  if (signedIn && Number(id) > 0) return <ServerClassDetail experienceId={Number(id)} />;
+  return <ClassDetail />;
+}
+
+function ClassDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = classById(id);
   const rows = [

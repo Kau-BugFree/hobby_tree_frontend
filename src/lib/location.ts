@@ -33,3 +33,19 @@ export async function locateDistrict(): Promise<LocateResult> {
     return { ok: false, reason: 'unavailable' };
   }
 }
+
+/**
+ * 서버 연동용: 현재 좌표 1회 (API-42 DEVICE에 바로 넘기고 앱에는 남기지 않는다)
+ * 서버가 좌표를 지역 ID로 바꾸고 원시 좌표는 저장하지 않는다 (명세 API-42)
+ */
+export type CoordsResult = { ok: true; latitude: number; longitude: number } | { ok: false; reason: 'denied' | 'unavailable' };
+export async function currentCoords(): Promise<CoordsResult> {
+  const perm = await Location.requestForegroundPermissionsAsync();
+  if (perm.status !== Location.PermissionStatus.GRANTED) return { ok: false, reason: 'denied' };
+  try {
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    return { ok: true, latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+  } catch {
+    return { ok: false, reason: 'unavailable' };
+  }
+}

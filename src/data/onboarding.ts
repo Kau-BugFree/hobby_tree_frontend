@@ -1,6 +1,8 @@
 /**
  * 온보딩 질문 정의 (Figma O-02 ~ O-06-1, 2026-10-13 질문 목록 기준).
- * initial 값은 Figma 프로토타입에서 선택돼 있던 상태를 그대로 옮겼다.
+ * 선택지 문구는 AI 추천 엔진 설문(GET /onboarding/options → questionnaire)과 글자까지 같아야 한다.
+ *   로그인 상태에서는 서버 설문의 options·exclusive·max가 이 값보다 우선한다 (OnboardingParts).
+ * initial 값은 Figma 프로토타입에서 선택돼 있던 상태(참고용)다. 앱은 모든 답을 빈 상태로 시작한다 (appState).
  */
 import type { HobbyKey } from '../components/Graphics';
 
@@ -18,6 +20,8 @@ export interface OptionGroupDef {
   max?: number;
   /** 이 선택지를 고르면 입력 칸이 나타난다 */
   custom?: { option: string; type: 'amount' | 'time'; sheet: string };
+  /** 이 선택지를 고르면 글 입력 칸이 나타난다 (questionnaire.custom_values) */
+  customText?: { option: string; field: 'q02Other' | 'q09Exclude'; placeholder: string; max: number };
 }
 
 export interface QuestionDef {
@@ -69,7 +73,7 @@ export const STEP1: OnboardingStepDef = {
     },
     {
       code: 'Q02',
-      rule: '여러 개 · 3개까지 추천',
+      rule: '여러 개',
       title: '지금 해보고 싶거나 이어가고 싶은 취미가 있나요?',
       groups: [
         {
@@ -87,6 +91,7 @@ export const STEP1: OnboardingStepDef = {
           ],
           initial: ['커피', '요리 (한식·중식·양식·일식·제과·제빵)', '악기 (피아노·기타)'],
           exclusive: ['아직 모르겠어요'],
+          customText: { option: '다른 취미 직접 입력', field: 'q02Other', placeholder: '예: 뜨개질', max: 200 },
         },
       ],
       note: '아직 지원하지 않는 취미는 준비 중이라고 알려 드리고, 적어 주신 내용은 보관해요. 베이킹은 요리의 제과·제빵 경로로 이어져요.',
@@ -229,6 +234,7 @@ export const STEP3: OnboardingStepDef = {
           options: ['새 장비 구매', '야외', '외부 시설', '많은 신체 활동', '다른 사람 필수', '큰 소음', '화기 사용', '없음', '직접 입력'],
           initial: ['큰 소음'],
           exclusive: ['없음'],
+          customText: { option: '직접 입력', field: 'q09Exclude', placeholder: '예: 날카로운 도구', max: 500 },
         },
       ],
       note: '‘없음’은 다른 제외 조건과 함께 고를 수 없어요. 직업이나 거주 형태로 주방·소음 조건을 짐작하지 않아요.',

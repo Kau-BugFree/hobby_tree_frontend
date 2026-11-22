@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   AppText,
   ChatbotFab,
+  ConfirmModal,
   CircleIconButton,
   IconSlot,
   PlantTreeButton,
@@ -20,12 +21,15 @@ import {
   TabHeader,
   TagRow,
   Touchable,
+  useToast,
 } from '../../components';
 import { Avatar, EmptySlotRow, RoadmapRow } from '../../components/my/MyParts';
-import { MAX_TREE_SLOTS, TREES } from '../../data/hobbies';
+import { useForest } from '../../lib/forest';
 import { PROFILE_STATS, profileTags } from '../../data/my';
 import { shortRegion, useAppState } from '../../lib/appState';
-import { go } from '../../lib/nav';
+import { go, reset } from '../../lib/nav';
+import { useSession } from '../../lib/session';
+import { errorMessage } from '../../api/client';
 import { COLORS, SHADOWS } from '../../theme';
 
 interface StatItem {
@@ -76,14 +80,88 @@ function ProfileCard() {
   );
 }
 
+/** API-03 로그아웃 · API-07 회원 탈퇴 — 로그인 상태일 때만 보인다 */
+function LogoutRow() {
+  const { signedIn, signOut, withdraw } = useSession();
+  const toast = useToast();
+  const [busy, setBusy] = React.useState(false);
+  if (!signedIn) return null;
+  /** 먼저 로그인 화면으로 옮긴 뒤 세션을 정리한다 (MY 화면이 로그아웃 상태로 다시 그려지다 멈추지 않게) */
+  const onPress = async () => {
+    setBusy(true);
+    reset('/onboarding/login');
+    try {
+      await signOut();
+    } catch {
+      // 서버 로그아웃이 실패해도 이 기기 로그인 정보는 지워진다
+    }
+    toast({ title: '로그아웃했어요', icon: 'info' });
+  };
+  /** API-07 회원 탈퇴 — 앱 모달로 한 번 더 확인 */
+  const [confirmWithdraw, setConfirmWithdraw] = React.useState(false);
+  const onWithdraw = async () => {
+    setBusy(true);
+    try {
+      const r = await withdraw();
+      setConfirmWithdraw(false);
+      reset('/onboarding/login');
+      toast({ title: '탈퇴했어요', sub: r.restorableUntil ? `${r.restorableUntil.slice(0, 10)}까지 같은 계정으로 로그인하면 복구할 수 있어요` : undefined, icon: 'info' });
+    } catch (e) {
+      setConfirmWithdraw(false);
+      toast({ title: '탈퇴하지 못했어요', sub: errorMessage(e), icon: 'info' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const restoreUntil = (() => {
+    const d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+  return (
+    <View style={styles.accountRow}>
+      <Touchable accessibilityLabel="로그아웃" disabled={busy} onPress={onPress} style={styles.logout}>
+        <AppText variant="callout14Bold" color="textMuted">
+          {busy ? '처리하는 중…' : '로그아웃'}
+        </AppText>
+      </Touchable>
+      <Touchable accessibilityLabel="회원 탈퇴" disabled={busy} onPress={() => setConfirmWithdraw(true)} style={styles.logout}>
+        <AppText variant="caption12Bold" color="textMuted">
+          회원 탈퇴
+        </AppText>
+      </Touchable>
+      <ConfirmModal
+        visible={confirmWithdraw}
+        tone="danger"
+        icon="leaf"
+        title="정말 탈퇴할까요?"
+        message="키우던 나무와 활동 기록은 30일 동안 보관돼요. 그 안에 같은 계정으로 로그인하면 다시 되살릴 수 있어요."
+        highlight={`${restoreUntil}이 지나면 복구할 수 없어요`}
+        confirmLabel="탈퇴하기"
+        cancelLabel="계속 이용하기"
+        busy={busy}
+        onConfirm={onWithdraw}
+        onCancel={() => setConfirmWithdraw(false)}
+      />
+    </View>
+  );
+}
+
 export default function MyScreen() {
   const insets = useSafeAreaInsets();
   const { state } = useAppState();
-  const stats: StatItem[] = [
-    { value: `${PROFILE_STATS.trees}그루`, label: '키우는 나무', tone: 'forest' },
-    { value: `${PROFILE_STATS.maxStage}단계`, label: '가장 큰 나무', tone: 'khaki' },
-    { value: `${PROFILE_STATS.doneActivities}개`, label: '해 본 활동', tone: 'khaki' },
-  ];
+  // 로그인: API-18 나무 목록 기준 / 체험 모드: 가짜 값
+  const { trees: TREES, live, maxTrees: MAX_TREE_SLOTS } = useForest();
+  const stats: StatItem[] = live
+    ? [
+        { value: `${TREES.length}그루`, label: '키우는 나무', tone: 'forest' },
+        { value: `${Math.max(0, ...TREES.map((t) => t.server?.stageNumber ?? 0))}단계`, label: '가장 큰 나무', tone: 'khaki' },
+        { value: `${TREES.reduce((n, t) => n + (t.server?.completed ?? 0), 0)}개`, label: '해 본 활동', tone: 'khaki' },
+      ]
+    : [
+        { value: `${PROFILE_STATS.trees}그루`, label: '키우는 나무', tone: 'forest' },
+        { value: `${PROFILE_STATS.maxStage}단계`, label: '가장 큰 나무', tone: 'khaki' },
+        { value: `${PROFILE_STATS.doneActivities}개`, label: '해 본 활동', tone: 'khaki' },
+      ];
   const left = MAX_TREE_SLOTS - TREES.length;
 
   return (
@@ -110,9 +188,14 @@ export default function MyScreen() {
         </View>
         <SectionTitle title="취미 로드맵" right={`${TREES.length}/${MAX_TREE_SLOTS}그루`} />
         {TREES.map((t) => (
-          <RoadmapRow key={t.hobby} tree={t} onPress={() => go(`/my/roadmap?hobby=${encodeURIComponent(t.hobby)}`)} />
+          <RoadmapRow
+            key={String(t.server?.userHobbyId ?? t.hobby)}
+            tree={t}
+            onPress={() => go(`/my/roadmap?hobby=${encodeURIComponent(t.hobby)}${t.server ? `&userHobbyId=${t.server.userHobbyId}` : ''}`)}
+          />
         ))}
         {left > 0 ? <EmptySlotRow left={left} onPress={() => go('/home/plant')} /> : null}
+        <LogoutRow />
       </ScrollView>
       <ChatbotFab />
     </View>
@@ -137,4 +220,6 @@ const styles = StyleSheet.create({
   bento: { flexDirection: 'row', gap: 10 },
   stat: { flex: 1, gap: 2, paddingVertical: 14, paddingHorizontal: 14, borderRadius: 20 },
   statKhaki: { backgroundColor: COLORS.bgKhaki },
+  accountRow: { alignItems: 'center', gap: 2 },
+  logout: { alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 16, marginTop: 8 },
 });

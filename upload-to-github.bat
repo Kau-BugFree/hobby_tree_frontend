@@ -7,7 +7,8 @@ rem  - 키(.env.local), node_modules, android, 로그 파일은 올리지 않음
 rem  - 저장소가 비어 있으면 main, 이미 코드가 있으면 새 브랜치 feature/fe-hobbytree4 로 올림
 rem ============================================================
 set SRC=C:\Users\zzz54\hobbytree4
-set DST=C:\Users\zzz54\hobby_tree_frontend
+rem 기존 hobby_tree_frontend 폴더는 Git 저장소가 아니라서(그냥 복사본) 새 폴더에 받는다
+set DST=C:\Users\zzz54\hobby_tree_frontend_git
 set REPO=https://github.com/Kau-BugFree/hobby_tree_frontend.git
 set BRANCH=feature/fe-hobbytree4
 
@@ -15,17 +16,19 @@ where git >nul 2>nul || (echo [오류] Git이 설치돼 있지 않아요. winget
 
 if not exist "%DST%\.git" (
   echo [1/5] 팀 저장소 받는 중...
-  git clone %REPO% "%DST%" || (echo [오류] clone 실패 - 저장소 권한/로그인을 확인하세요. & pause & exit /b 1)
+  git clone %REPO% "%DST%" || (echo. & echo [오류] clone 실패 - 바로 위 영어 메시지를 캡처해 보내 주세요. & pause & exit /b 1)
 ) else (
   echo [1/5] 이미 받아 둔 저장소가 있어요: %DST%
   git -C "%DST%" fetch origin
 )
 
-echo [2/5] hobbytree4 파일 복사 중 (키·빌드 폴더 제외)...
-robocopy "%SRC%" "%DST%" /E /XD node_modules android ios .expo .git dist web-build /XF .env.local .env *.log upload-to-github.bat /NFL /NDL /NJH /NJS /NP >nul
+echo [2/5] hobbytree4 파일 복사 중 - 키·빌드 폴더 제외
+robocopy "%SRC%" "%DST%" /E /XD node_modules android ios .expo .git .idea dist web-build /XF .env.local .env *.log build-log.txt upload-to-github.bat /NFL /NDL /NJH /NJS /NP >nul
 
 cd /d "%DST%"
 git add -A
+rem IDE 설정·빌드 로그는 올리지 않음 (이미 올라갔으면 Git에서만 뺌, 파일은 그대로)
+git rm -r -q --cached --ignore-unmatch .idea build-log.txt >nul 2>nul
 
 echo [3/5] 올라갈 파일에 비밀 파일이 있는지 확인 중...
 git diff --cached --name-only | findstr /I /R "\.env\.local$ \.keystore$ \.jks$ \.p12$" && (
@@ -43,7 +46,7 @@ if "%HEADS%"=="0" (
   echo [5/5] push...
   git push -u origin main
 ) else (
-  echo [4/5] 기존 코드가 있어요 - 새 브랜치 %BRANCH% 로 올려요 (main은 건드리지 않음).
+  echo [4/5] 기존 코드가 있어요 - 새 브랜치 %BRANCH% 로 올려요 - main은 건드리지 않음
   git checkout -B %BRANCH%
   git commit -m "로그인·온보딩(14문항 설문)·추천·하비코치 연동" || echo 바뀐 파일이 없어요.
   echo [5/5] push...

@@ -96,7 +96,7 @@ export default function OnboardingStep4() {
   return (
     <Screen
       header={<OnboardingBar progress="4/4" filled={4} />}
-      footer={<Button label="이대로 추천 받기" onPress={() => go('/onboarding/summary')} />}
+      footer={<Button label="이대로 추천 받기" onPress={() => go('/onboarding/terms')} />}
       contentStyle={styles.content}
     >
       <StepTitle step={STEP} />

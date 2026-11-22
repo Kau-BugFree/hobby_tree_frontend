@@ -1,6 +1,8 @@
+import { SvgXml } from 'react-native-svg';
 import React from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
+import { CLASS_ART } from '../assets/classArt';
 import { COLORS, ColorToken } from '../theme';
 import { AppText } from './AppText';
 import { FigmaSvg, hasFigmaSvg } from './FigmaSvg';
@@ -76,12 +78,22 @@ export function TreeStage({ stage, scale = 1, style }: { stage: TreeStageNo; sca
 }
 
 /** 이미지·일러스트 자리 (Figma "illustration" 프레임) */
+/** 체험 모드 클래스 id → Figma 클래스 일러스트 */
+const CLASS_ID_ART: Record<string, string> = {
+  'class-brewing': 'class-art-brewing',
+  'class-cooking-bowl': 'class-art-cooking',
+  'class-library-reading': 'class-art-reading',
+  'class-reading-first-book': 'class-art-reading',
+  'class-ukulele-chord': 'class-art-ukulele',
+};
+
 export function IllustrationSlot({ name, width, height, style }: { name: string; width: number | `${number}%`; height: number; style?: StyleProp<ViewStyle> }) {
-  // Figma 일러스트 (class-<클래스 id> 등). 없는 이름은 점선 자리 표시를 그린다
-  if (hasFigmaSvg(name)) {
+  // Figma에서 내보낸 일러스트가 있으면 그리고, 없으면 자리 표시(점선)
+  const xml = CLASS_ART[name] ?? CLASS_ART[CLASS_ID_ART[name] ?? ''];
+  if (xml) {
     return (
-      <View accessibilityLabel={name} style={[{ width, height }, style]}>
-        <FigmaSvg name={name} width={typeof width === 'number' ? width : '100%'} height={height} />
+      <View accessibilityLabel={name} style={[{ width, height, alignItems: 'center', justifyContent: 'center' }, style]}>
+        <SvgXml xml={xml} width="100%" height="100%" />
       </View>
     );
   }

@@ -62,6 +62,13 @@ export const COLORS = {
   kakaoFg: '#1A1A1A',
   appleBg: '#FFFFFF',
   appleFg: '#0D0D0D',
+  /** 결제 수단 배지 — 네이버페이 대표색 */
+  naverBg: '#03C75A',
+  naverFg: '#FFFFFF',
+  /** 구글 로그인 버튼 (Google 브랜드 가이드 — 흰 배경 + 회색 테두리) */
+  googleBg: '#FFFFFF',
+  googleFg: '#1F1F1F',
+  googleBorder: '#747775',
 } as const;
 
 export type ColorToken = keyof typeof COLORS;

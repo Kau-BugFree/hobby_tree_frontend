@@ -5,15 +5,28 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
-import { AppText, Button, IllustrationSlot, OverlaySheet, TagRow } from '../../components';
+import { errorMessage } from '../../api/client';
+import { subscribeChatLaunch } from '../../api/endpoints';
+import { AppText, Button, IllustrationSlot, OverlaySheet, TagRow, useToast } from '../../components';
+import { useSession } from '../../lib/session';
 import { CHAT_FEATURES } from '../../data/together';
 import { useAppState } from '../../lib/appState';
 import { back, swap } from '../../lib/nav';
 
 export default function ChatSoonSheet() {
   const { toggleAlarm } = useAppState();
-  const onAlarm = () => {
-    // TODO(API): POST /features/chat/launch-alarm + 푸시 권한 요청
+  const { signedIn } = useSession();
+  const toast = useToast();
+  /** 로그인 상태: API-47 채팅 출시 알림 신청 (이미 신청했어도 성공) */
+  const onAlarm = async () => {
+    if (signedIn) {
+      try {
+        await subscribeChatLaunch();
+      } catch (e) {
+        toast({ title: '알림을 신청하지 못했어요', sub: errorMessage(e), icon: 'info' });
+        return;
+      }
+    }
     toggleAlarm('feature:chat');
     swap('/together/chat-alarm-set');
   };

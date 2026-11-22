@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# IDE · 빌드 로그 (올리지 않음)
+.idea/
+build-log.txt
+*.log

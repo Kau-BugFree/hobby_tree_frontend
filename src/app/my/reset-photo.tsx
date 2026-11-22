@@ -1,14 +1,17 @@
 /**
  * M-13 기본 이미지로 되돌리기 확인 (가운데 확인창 오버레이)
  * ‘되돌리기’ → 사진 삭제 후 M-03 / ‘취소’ → 닫기
- * TODO(API): DELETE /me/profile-photo
+ * 로그인 상태: API-09 프로필 이미지 초기화
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
 
 import { AppText, Button, OverlayDialog, useToast } from '../../components';
 import { Avatar } from '../../components/my/MyParts';
+import { errorMessage } from '../../api/client';
+import { resetProfileImage } from '../../api/endpoints';
 import { useAppState } from '../../lib/appState';
+import { useSession } from '../../lib/session';
 import { back } from '../../lib/nav';
 
 export default function ResetPhotoDialog() {
@@ -16,7 +19,16 @@ export default function ResetPhotoDialog() {
   const toast = useToast();
   const initial = state.userName.slice(0, 1);
 
-  const onReset = () => {
+  const { signedIn } = useSession();
+  const onReset = async () => {
+    if (signedIn) {
+      try {
+        await resetProfileImage();
+      } catch (e) {
+        toast({ title: '되돌리지 못했어요', sub: errorMessage(e), icon: 'info' });
+        return;
+      }
+    }
     update({ profilePhotoUri: null });
     back();
     toast({ title: '기본 이미지로 되돌렸어요', icon: 'check' });

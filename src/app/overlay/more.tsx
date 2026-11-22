@@ -36,9 +36,10 @@ function MenuRow({ item, onPress }: { item: MenuItem; onPress: () => void }) {
 }
 
 export default function MoreSheet() {
-  const { title, path } = useLocalSearchParams<{ title?: string; path?: string }>();
+  const { title, path, targetType, targetId } = useLocalSearchParams<{ title?: string; path?: string; targetType?: string; targetId?: string }>();
   const toast = useToast();
-  const qs = `title=${encodeURIComponent(title ?? '')}&path=${encodeURIComponent(path ?? '')}`;
+  // 신고 대상(API-48)이 있으면 함께 넘긴다
+  const qs = `title=${encodeURIComponent(title ?? '')}&path=${encodeURIComponent(path ?? '')}${targetType && targetId ? `&targetType=${targetType}&targetId=${targetId}` : ''}`;
 
   const handlers: Record<MenuItem['key'], () => void> = {
     share: () => swap(`/overlay/share?${qs}`),

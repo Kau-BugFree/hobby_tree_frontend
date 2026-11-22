@@ -10,6 +10,12 @@ import { Href, router } from 'expo-router';
 export const go = (href: string) => router.push(href as Href);
 export const swap = (href: string) => router.replace(href as Href);
 export const back = () => (router.canGoBack() ? router.back() : router.replace('/home' as Href));
+/**
+ * 온보딩 화면의 뒤로가기: 이전 화면이 있으면 그리로, 없으면(로그인 직후 1/4) 로그인 화면으로.
+ * 온보딩을 마치지 않은 상태로 홈(메인)으로 빠지지 않게 한다.
+ */
+export const backInOnboarding = () =>
+  router.canGoBack() ? router.back() : router.replace('/onboarding/login' as Href);
 /** 스택을 비우고 이동 (예: 온보딩 완료 → 홈 탭) */
 export const reset = (href: string) => {
   if (router.canDismiss()) router.dismissAll();

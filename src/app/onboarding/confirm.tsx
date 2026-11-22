@@ -1,8 +1,11 @@
 /**
  * O-06-1 고른 취미 추가 확인 · B01~B06
  * - 고른 취미마다 "Check/…" 카드 → HobbyCheckCard 서브 컴포넌트
+ * - 다음: O-07 나무 심기 완료 (약관 동의·온보딩 완료는 추천 전에 끝남)
+ * 로그인 상태: ‘확인하고 나무 심기’ → 고른 취미마다 API-19 나무 심기 (recommendationId 함께)
+ *   이미 같은 취미 나무가 있으면(TREE409_2) 심어진 것으로 보고 넘어간다. 5그루 초과(TREE409_1)면 안내
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText, Card, ChipGroup, HobbyIcon, IconTile, InfoNote, Screen } from '../../components';
@@ -11,7 +14,10 @@ import { OnboardingBar, StepTitle } from '../../components/onboarding/Onboarding
 import type { HobbyKey } from '../../components/Graphics';
 import { HOBBY_CHECKS, RECOMMENDED } from '../../data/onboarding';
 import { useAppState } from '../../lib/appState';
+import { plantErrorMessage, useForest } from '../../lib/forest';
 import { go } from '../../lib/nav';
+import { useSession } from '../../lib/session';
+import { useToast } from '../../components';
 import { Button } from '../../components/Button';
 import { Touchable } from '../../components/Touchable';
 import { COLORS } from '../../theme';
@@ -76,13 +82,34 @@ const NOTE_LINES: { text: string; variant: AppTextProps['variant'] }[] = [
 
 export default function OnboardingConfirm() {
   const { state } = useAppState();
+  const { signedIn } = useSession();
+  const { plant, reload } = useForest();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+
+  /** 고른 서버 취미를 차례로 심는다 → 성공하면 O-07 */
+  const onPlant = async () => {
+    const ids = state.server.pickedHobbyIds;
+    if (!signedIn || !ids.length) return go('/onboarding/planted');
+    setBusy(true);
+    try {
+      for (const id of ids) await plant(id, state.server.recommendation?.recommendationId);
+      reload();
+      go('/onboarding/planted');
+    } catch (e) {
+      toast({ title: '나무를 심지 못했어요', sub: plantErrorMessage(e), icon: 'info' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <Screen
       header={<OnboardingBar progress="4/4" filled={4} />}
       footer={
         <>
-          <Button label="확인하고 나무 심기" onPress={() => go('/onboarding/planted')} />
-          <Touchable small onPress={() => go('/onboarding/planted')} style={styles.later}>
+          <Button label={busy ? '나무 심는 중…' : '확인하고 나무 심기'} disabled={busy} onPress={onPlant} />
+          <Touchable small disabled={busy} onPress={onPlant} style={styles.later}>
             <AppText variant="callout14Bold" color="textMuted">
               나중에 확인할게요
             </AppText>

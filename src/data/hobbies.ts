@@ -4,6 +4,7 @@
  */
 import type { HobbyKey, TreeStageNo } from '../components/Graphics';
 import type { TagTone } from '../components/Tag';
+import type { ServerTreeInfo } from '../lib/forest';
 
 export interface ActivityStep {
   title: string;
@@ -45,6 +46,8 @@ export interface TreeData {
   /** 지금 하는 활동 진행률 0~1 */
   progress: number;
   recommendations: StageRecommendation[];
+  /** 서버 나무일 때만 (API-18·20·22) — lib/forest.tsx */
+  server?: ServerTreeInfo;
 }
 
 export const ACTIVITIES: Record<string, ActivityDetail> = {
@@ -194,6 +197,9 @@ export const TREES: TreeData[] = [
 ];
 
 export const MAX_TREE_SLOTS = 5;
+
+/** 서비스에서 지원하는 취미 3개 (서버 카테고리: 요리 · 악기 · 독서 — 팀 결정) */
+export const SUPPORTED_HOBBIES: HobbyKey[] = ['요리', '악기', '독서'];
 
 /** URL 파라미터(hobby) → 나무 */
 export const treeByHobby = (hobby: string | undefined) => TREES.find((t) => t.hobby === hobby) ?? TREES[0];

@@ -2,14 +2,19 @@
  * M-08 지역 직접 입력
  * - 검색 입력(TextInput + 지우기) → 결과 카드(RegionRow 목록, FlatList)
  * - 결과를 누르면 시·구 단위로 저장하고 M-03으로 돌아감 (동 단위는 ‘서울 마포구’처럼 구로 바뀜)
- * TODO(API): GET /regions?q= (행정구역 코드 포함) — 지금은 MOCK_DATA 검색
+ * 로그인 상태: API-41 지역 검색(시·군·구, 0.3초 뒤 검색) → 누르면 API-42 활동 지역 설정(MANUAL · regionId)
+ * 체험 모드: MOCK_DATA 검색
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText, IconSlot, KeyboardSafe, TopBar, Touchable, useToast } from '../../components';
+import { errorMessage } from '../../api/client';
+import { searchRegions as searchServerRegions, setLocation } from '../../api/endpoints';
+import type { Region } from '../../api/types';
 import { RegionResult, searchRegions } from '../../data/my';
+import { useSession } from '../../lib/session';
 import { useAppState } from '../../lib/appState';
 import { back } from '../../lib/nav';
 import { COLORS, TYPO } from '../../theme';
@@ -36,17 +41,64 @@ function RegionRow({ item, current, onPress }: { item: RegionResult; current: bo
   );
 }
 
+/** 서버 지역 → 화면 행 */
+const fromServer = (r: Region): RegionResult & { regionId: number } => ({
+  label: r.fullName ?? r.name,
+  saveAs: r.fullName ?? r.name,
+  isDistrict: true,
+  regionId: r.regionId,
+});
+
 export default function RegionScreen() {
   const insets = useSafeAreaInsets();
   const { state, update } = useAppState();
   const toast = useToast();
-  const [q, setQ] = useState('마포');
-  const results = searchRegions(q);
+  const { signedIn } = useSession();
+  const [q, setQ] = useState(signedIn ? '' : '마포');
+  const [server, setServer] = useState<(RegionResult & { regionId: number })[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
-  const onPick = (r: RegionResult) => {
-    update({ region: r.saveAs });
+  // API-41 — 입력이 멈추고 0.3초 뒤 검색
+  useEffect(() => {
+    if (!signedIn) return;
+    const keyword = q.trim();
+    if (!keyword) {
+      setServer([]);
+      return;
+    }
+    let alive = true;
+    const t = setTimeout(() => {
+      searchServerRegions({ keyword: keyword.slice(0, 50), level: 'SIGUNGU', size: 30 })
+        .then((res) => {
+          if (!alive) return;
+          setServer((res.items ?? []).map(fromServer));
+          setSearchError(null);
+        })
+        .catch((e) => alive && setSearchError(errorMessage(e)));
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [q, signedIn]);
+
+  const results: RegionResult[] = signedIn ? server : searchRegions(q);
+
+  const onPick = async (r: RegionResult) => {
+    const regionId = (r as RegionResult & { regionId?: number }).regionId;
+    let saved = r.saveAs;
+    if (signedIn && regionId) {
+      try {
+        const res = await setLocation({ source: 'MANUAL', regionId });
+        saved = res.location?.fullName ?? res.location?.name ?? saved;
+      } catch (e) {
+        toast({ title: '지역을 저장하지 못했어요', sub: errorMessage(e), icon: 'info' });
+        return;
+      }
+    }
+    update({ region: saved });
     back();
-    toast({ title: `지역을 ‘${r.saveAs}’로 정했어요`, icon: 'pin' });
+    toast({ title: `지역을 ‘${saved}’로 정했어요`, icon: 'pin' });
   };
 
   return (
@@ -84,7 +136,7 @@ export default function RegionScreen() {
         ListEmptyComponent={
           q ? (
             <AppText variant="callout14Regular" color="textMuted" align="center" style={styles.empty}>
-              {`‘${q}’로 찾은 지역이 없어요`}
+              {searchError ?? `‘${q}’로 찾은 지역이 없어요`}
             </AppText>
           ) : undefined
         }
