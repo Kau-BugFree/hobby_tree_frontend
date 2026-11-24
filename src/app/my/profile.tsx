@@ -31,7 +31,7 @@ import { ageToServer, NICKNAME_MAX } from '../../api/mappers';
 import { nextSelection, useAppState } from '../../lib/appState';
 import { useSession } from '../../lib/session';
 import { recordConsent } from '../../lib/locationConsent';
-import { NICKNAME_GUIDE, useNicknameCheck } from '../../lib/nickname';
+import { isNicknameTakenError, NICKNAME_GUIDE, useNicknameCheck } from '../../lib/nickname';
 import { back, go } from '../../lib/nav';
 import { COLORS, TYPO } from '../../theme';
 
@@ -64,7 +64,9 @@ export default function ProfileScreen() {
       try {
         await updateProfile({ nickname: nick.trim(), ageRange: ageToServer(profile.age) });
       } catch (e) {
-        toast({ title: '프로필을 저장하지 못했어요', sub: errorMessage(e), icon: 'info' });
+        // 닉네임 중복(409 USER409_2)은 모달·토스트 없이 입력칸 밑 빨간 글씨로 (11/16 회의)
+        if (isNicknameTakenError(e)) nickCheck.markTaken();
+        else toast({ title: '프로필을 저장하지 못했어요', sub: errorMessage(e), icon: 'info' });
         return;
       } finally {
         setSaving(false);

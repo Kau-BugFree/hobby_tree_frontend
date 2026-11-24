@@ -4,6 +4,7 @@
  * - 로그인 상태: API-10 선택지·설문 → API-12·11 14문항 설문 저장 → API-12 재조회 확인 → API-13 온보딩 완료(약관) → API-14 추천 생성
  *   응답이 오면 O-06 (최소 1.6초 노출). 실패하면 이 화면에서 '다시 시도' / '기본 추천으로 보기'
  *   약관이 바뀌었으면 '약관 다시 확인'
+ *   닉네임이 이미 쓰이고 있으면(API-06 409 USER409_2) '닉네임 다시 입력' → O-05 약관 화면 입력칸 밑에 빨간 글씨
  *   ‘다시 시도’ → API-10을 새로 조회한 뒤 저장부터 다시 (prepareRecommendation)
  */
 import { router } from 'expo-router';
@@ -16,6 +17,7 @@ import { engineStatusOf, hobbyKeyOf } from '../../api/mappers';
 import { AppText, Button, IconSlot, TreeStage } from '../../components';
 import type { HobbyKey } from '../../components/Graphics';
 import { useAppState } from '../../lib/appState';
+import { isNicknameTakenError, markNicknameTaken, NICKNAME_TAKEN_MESSAGE } from '../../lib/nickname';
 import { AgreementsNeededError, lastStep, prepareRecommendation } from '../../lib/onboardingFlow';
 import { useSession } from '../../lib/session';
 import { summarize } from '../../lib/summary';
@@ -46,6 +48,7 @@ export default function OnboardingSummary() {
   const s = summarize(state);
   const [error, setError] = useState<string | null>(null);
   const [needTerms, setNeedTerms] = useState(false);
+  const [nickTaken, setNickTaken] = useState(false);
   // 회원 상태는 화면에 들어온 시점 값으로만 판단 (API-13 뒤 ACTIVE로 바뀌어도 다시 실행하지 않음)
   const memberStatusRef = useRef(memberStatus);
   const [attempt, setAttempt] = useState(0);
@@ -78,6 +81,16 @@ export default function OnboardingSummary() {
       update({ picked: Array.from(new Set<HobbyKey>(keys)) });
       return true;
     } catch (e) {
+      if (isNicknameTakenError(e)) {
+        // 약관 화면으로 돌아가면 같은 닉네임이 바로 '이미 사용 중'으로 보이게 기억해 둔다
+        if (state.server.nickname) markNicknameTaken(state.server.nickname);
+        setNickTaken(true);
+        setNeedTerms(false);
+        setError(`${NICKNAME_TAKEN_MESSAGE}
+다른 닉네임으로 바꿔 주세요`);
+        return false;
+      }
+      setNickTaken(false);
       setNeedTerms(e instanceof AgreementsNeededError);
       setError(
         e instanceof AgreementsNeededError
@@ -128,7 +141,9 @@ export default function OnboardingSummary() {
           <AppText variant="caption12Medium" color="textOnDarkMuted" align="center">
             {error}
           </AppText>
-          {needTerms ? (
+          {nickTaken ? (
+            <Button variant="secondary" label="닉네임 다시 입력" onPress={() => router.replace('/onboarding/terms')} />
+          ) : needTerms ? (
             <Button variant="secondary" label="약관 다시 확인" onPress={() => router.replace('/onboarding/terms')} />
           ) : (
             <Button variant="secondary" label="다시 시도" onPress={() => setAttempt((a) => a + 1)} />
