@@ -326,7 +326,7 @@ export const RECOMMENDED: RecommendedHobby[] = [
   { hobby: '독서', name: '독서', match: 92, why: '도서관 대출이면 0원 · 쉬면서 기분 전환', firstActivity: '표지와 첫 문장으로 골라보기' },
   { hobby: '러닝', name: '러닝', match: 85, why: '운동화만 있으면 · 혼자 내 속도로', firstActivity: '빠르게 걷기 20분' },
   { hobby: '요리', name: '요리', match: 71, why: '가진 주방 도구로 · 한 번에 15분', firstActivity: '계량해서 간장 드레싱 만들기' },
-  { hobby: '악기', name: '악기 연주', match: 78, why: '전자건반·헤드폰이면 집에서도 · 소리 조건은 다음에 확인', firstActivity: '피아노 첫 소리 내기' },
+  { hobby: '악기', name: '악기', match: 78, why: '전자건반·헤드폰이면 집에서도 · 소리 조건은 다음에 확인', firstActivity: '피아노 첫 소리 내기' },
 ];
 
 export const INITIAL_PICKED: HobbyKey[] = ['커피', '독서', '요리', '악기'];

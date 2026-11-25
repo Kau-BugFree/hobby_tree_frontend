@@ -1,10 +1,9 @@
 /**
  * H-08 알림
  * - 반복 "Notice/…" 행 → NoticeRow
- * - 알림 빈도 단일 선택 (기본: 받지 않기)
+ * - 알림 켜고 끄기는 MY ‘알림 받기’ 스위치 (Figma v5)
  * 로그인 상태:
  *   - API-44 알림 목록(최신순 · 안 읽은 수) · 누르면 API-45 읽음 처리 후 대상 화면으로
- *   - 알림 빈도 → API-46 (받지 않기 NONE · 주 1회 요약 WEEKLY · 활동한 날만 ACTIVITY_DAYS)
  * 체험 모드: MOCK_DATA(NOTICES)
  */
 import { useFocusEffect } from 'expo-router';
@@ -12,20 +11,16 @@ import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { errorMessage } from '../../api/client';
-import { getMe, listNotifications, markNotificationRead, updateNotificationSettings } from '../../api/endpoints';
+import { listNotifications, markNotificationRead } from '../../api/endpoints';
 import { hobbyKeyOf } from '../../api/mappers';
-import type { AppNotification, NotificationFrequency } from '../../api/types';
-import { AppText, Button, Card, ChipGroup, IconSlot, IconTile, Screen, TopBar, Touchable, useToast } from '../../components';
-import { NOTICE_FREQUENCY, NOTICES, NoticeItem } from '../../data/hobbies';
-import { useAppState } from '../../lib/appState';
+import type { AppNotification } from '../../api/types';
+import { AppText, Button, Card, IconSlot, IconTile, Screen, TopBar, Touchable } from '../../components';
+import { NOTICES, NoticeItem } from '../../data/hobbies';
 import { useForest } from '../../lib/forest';
-import { go } from '../../lib/nav';
+import { go, reset } from '../../lib/nav';
 import { useSession } from '../../lib/session';
 import { COLORS } from '../../theme';
 
-type FreqLabel = (typeof NOTICE_FREQUENCY)[number];
-const FREQ_TO_SERVER: Record<FreqLabel, NotificationFrequency> = { '받지 않기': 'NONE', '주 1회 요약': 'WEEKLY', '활동한 날만': 'ACTIVITY_DAYS' };
-const FREQ_FROM_SERVER: Record<NotificationFrequency, FreqLabel> = { NONE: '받지 않기', WEEKLY: '주 1회 요약', ACTIVITY_DAYS: '활동한 날만' };
 
 const ICON_OF: Record<string, string> = {
   ACTIVITY_REMINDER: 'clock',
@@ -56,11 +51,8 @@ function NoticeRow({ item, unread, onPress }: { item: NoticeItem; unread?: boole
 }
 
 export default function NotificationsScreen() {
-  const { state, setAnswer } = useAppState();
   const { signedIn } = useSession();
   const { trees } = useForest();
-  const toast = useToast();
-  const freq = (state.answers.noticeFrequency as FreqLabel) ?? '받지 않기';
   const [items, setItems] = useState<AppNotification[] | null>(null);
   const [unreadCount, setUnread] = useState(0);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -87,14 +79,7 @@ export default function NotificationsScreen() {
     useCallback(() => {
       if (!signedIn) return;
       load();
-      // 서버 알림 설정을 화면 칩에 맞춘다 (API-05)
-      getMe()
-        .then((me) => {
-          const f = me.notificationSettings?.notificationFrequency;
-          if (f && FREQ_FROM_SERVER[f]) setAnswer('noticeFrequency', FREQ_FROM_SERVER[f]);
-        })
-        .catch(() => undefined);
-    }, [signedIn, load, setAnswer]),
+    }, [signedIn, load]),
   );
 
   /** 알림 대상 → 앱 화면 */
@@ -126,18 +111,6 @@ export default function NotificationsScreen() {
     }
     const href = targetHref(n);
     if (href) go(href);
-  };
-
-  const onFreq = async (v: FreqLabel) => {
-    const prev = freq;
-    setAnswer('noticeFrequency', v);
-    if (!signedIn) return;
-    try {
-      await updateNotificationSettings(FREQ_TO_SERVER[v]);
-    } catch (e) {
-      setAnswer('noticeFrequency', prev);
-      toast({ title: '알림 설정을 바꾸지 못했어요', sub: errorMessage(e), icon: 'info' });
-    }
   };
 
   return (
@@ -183,12 +156,16 @@ export default function NotificationsScreen() {
       </AppText>
       <Card>
         <AppText variant="callout14Bold" color="textPrimary">
-          알림은 기본으로 꺼져 있어요
+          알림 켜고 끄는 건 MY에서 해요
         </AppText>
         <AppText variant="caption12Medium" color="textMuted">
-          원하는 빈도를 고를 때만 알려 드려요. 연속 기록이 끊겨도 알리지 않아요.
+          MY의 ‘알림 받기’ 스위치로 언제든 바꿀 수 있어요. 기본은 꺼져 있어요.
         </AppText>
-        <ChipGroup options={NOTICE_FREQUENCY} value={freq} onChange={onFreq} />
+        <Touchable accessibilityLabel="MY에서 알림 설정하기" onPress={() => reset('/my')}>
+          <AppText variant="caption12Bold" color="brandPrimary">
+            MY에서 설정하기 ›
+          </AppText>
+        </Touchable>
       </Card>
     </Screen>
   );

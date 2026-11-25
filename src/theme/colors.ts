@@ -1,33 +1,34 @@
 /**
- * Figma 변수 컬렉션 "HobbyTree v5" (Light 모드)에서 추출한 색상 토큰.
+ * Figma "HobbyTree 하비트리 · 모바일 앱 디자인" 변수(text/primary · brand/primary · bg/app · bg/tint …)로 맞춘 색상 토큰.
+ * 예전 v5 카키 토큰 이름(bgKhaki 등)은 그대로 두고 값만 새 팔레트(bg/tint-soft 등)로 바꿨다.
  * 키 이름은 Figma 변수 경로(`bg/app` → `bgApp`)를 그대로 따른다.
  */
 export const COLORS = {
-  paletteCream: '#FBF5DD',
-  paletteKhaki: '#E7E1B1',
-  paletteGreen: '#306D29',
-  paletteForest: '#0D530E',
+  paletteCream: '#F6F9F7',
+  paletteKhaki: '#E6F5EC',
+  paletteGreen: '#17AD53',
+  paletteForest: '#0E6B39',
 
-  bgApp: '#FBF5DD',
-  bgSurface: '#FFFDF4',
-  bgSunken: '#F3ECCC',
-  bgKhaki: '#E7E1B1',
-  bgGreenSoft: '#E3EBC8',
-  bgForest: '#0D530E',
-  bgForest2: '#1D6421',
+  bgApp: '#F6F9F7',
+  bgSurface: '#FFFFFF',
+  bgSunken: '#EEF2EF',
+  bgKhaki: '#F3FAF6',
+  bgGreenSoft: '#E6F5EC',
+  bgForest: '#0E6B39',
+  bgForest2: '#17AD53',
 
-  brandPrimary: '#306D29',
-  brandDeep: '#0D530E',
-  brandMid: '#8DAE78',
+  brandPrimary: '#17AD53',
+  brandDeep: '#0E6B39',
+  brandMid: '#8ED3A9',
 
-  textPrimary: '#16210F',
-  textBody: '#3B4533',
-  textMuted: '#77745D',
-  textOnDark: '#FBF5DD',
-  textOnDarkMuted: '#C7D2AC',
+  textPrimary: '#15201A',
+  textBody: '#39463F',
+  textMuted: '#6B786F',
+  textOnDark: '#FFFFFF',
+  textOnDarkMuted: '#D4EEDD',
 
-  borderDefault: '#E4DCB8',
-  borderStrong: '#CCC392',
+  borderDefault: '#DCE5DF',
+  borderStrong: '#C3D1C8',
 
   accentWater: '#3E8FCF',
   accentWaterBg: '#DDEBF5',
@@ -37,12 +38,12 @@ export const COLORS = {
   accentDanger: '#A83B28',
 
   /** 오버레이 딤 (Figma: #0D1F0A @ 45%) */
-  dim: 'rgba(13, 31, 10, 0.45)',
+  dim: 'rgba(21, 32, 26, 0.45)',
   dimLight: 'rgba(13, 31, 10, 0.35)',
   white: '#FFFFFF',
   black: '#000000',
   /** 탭바 글래스 캡슐 (Figma: #FFFCF2 @ 55%, 테두리 #FFFFFF @ 70%) */
-  glass: 'rgba(255, 252, 242, 0.55)',
+  glass: 'rgba(255, 255, 255, 0.96)',
   glassBorder: 'rgba(255, 255, 255, 0.7)',
   onDarkGlass: 'rgba(255, 255, 255, 0.14)',
   onDarkGlassSoft: 'rgba(255, 255, 255, 0.06)',
@@ -52,7 +53,7 @@ export const COLORS = {
   /** iOS 시스템 알림 색 (권한 요청 안내용) */
   iosBlue: '#007AFF',
   /** Android 탭바 (블러 대신 거의 불투명한 유리색) */
-  androidGlass: 'rgba(255, 252, 242, 0.94)',
+  androidGlass: '#FFFFFF',
   /** 그림자 색 (Figma effect color) */
   shadowForest: '#0D330D',
   shadowDeep: '#0D260D',

@@ -1,36 +1,41 @@
-import { BlurView } from 'expo-blur';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { COLORS, SHADOWS } from '../theme';
+import { COLORS } from '../theme';
 import { AppText } from './AppText';
 import { IconSlot } from './IconSlot';
 import { Touchable } from './Touchable';
 
-/** 라우트 이름 → 탭 라벨 (Figma Tab/홈 · 체험 · 함께 · MY) */
+/** 라우트 이름 → 탭 라벨 (Figma Tab Bar: 홈 · 체험 · 함께 · 마이) */
 export const TAB_LABEL: Record<string, string> = {
   home: '홈',
   experience: '체험',
   together: '함께',
-  my: 'MY',
+  my: '마이',
+};
+
+/** 라우트 이름 → 아이콘 (선 아이콘, 선택 시 brand/primary) */
+const TAB_ICON: Record<string, string> = {
+  home: 'sprout',
+  experience: 'search',
+  together: 'users',
+  my: 'person',
 };
 
 /** 탭바 높이 (화면 하단 여백 계산용, 홈 인디케이터 제외) */
-export const TAB_BAR_HEIGHT = 74;
+export const TAB_BAR_HEIGHT = 60;
 
-/**
- * Figma "Tab Bar (liquid glass)" — 떠 있는 글래스 캡슐.
- * iOS는 BlurView, Android는 블러 성능 이슈로 반투명 단색으로 대체한다.
- */
+/** Figma "Tab Bar" — 화면 아래 붙은 흰 바 + 위 테두리 · 아이콘 22 + 라벨 11 */
 export function TabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const capsule = (
-    <View style={styles.row}>
+  return (
+    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       {state.routes.map((route, index) => {
         const focused = state.index === index;
         const label = TAB_LABEL[route.name] ?? route.name;
+        const color = focused ? 'brandPrimary' : 'textMuted';
         return (
           <Touchable
             key={route.key}
@@ -41,10 +46,10 @@ export function TabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
               const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
               if (!focused && !event.defaultPrevented) navigateToTab(route.key);
             }}
-            style={[styles.tab, focused && styles.tabOn]}
+            style={styles.tab}
           >
-            <IconSlot name={`tab-${label}-${focused ? 'on' : 'off'}`} size={22} color={focused ? 'brandDeep' : 'textBody'} />
-            <AppText variant="micro11Bold" color={focused ? 'brandDeep' : 'textBody'}>
+            <IconSlot name={TAB_ICON[route.name] ?? 'sprout'} size={22} color={color} />
+            <AppText variant="micro11Bold" color={color}>
               {label}
             </AppText>
           </Touchable>
@@ -52,34 +57,19 @@ export function TabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
       })}
     </View>
   );
-  return (
-    <View pointerEvents="box-none" style={[styles.host, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <View style={[styles.capsule, SHADOWS.tabBar]}>
-        {Platform.OS === 'ios' ? (
-          <BlurView intensity={30} tint="light" style={styles.blur}>
-            {capsule}
-          </BlurView>
-        ) : (
-          <View style={[styles.blur, styles.androidGlass]}>{capsule}</View>
-        )}
-      </View>
-    </View>
-  );
 }
 
 const styles = StyleSheet.create({
-  host: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: 6 },
-  capsule: { width: 300, maxWidth: '86%', borderRadius: 999 },
-  blur: {
-    borderRadius: 999,
-    overflow: 'hidden',
-    backgroundColor: COLORS.glass,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-    padding: 5,
+  bar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    paddingTop: 8,
+    backgroundColor: COLORS.bgSurface,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderDefault,
   },
-  androidGlass: { backgroundColor: COLORS.androidGlass },
-  row: { flexDirection: 'row' },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 7, borderRadius: 999 },
-  tabOn: { backgroundColor: COLORS.paletteKhaki },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 4 },
 });

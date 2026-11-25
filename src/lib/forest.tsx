@@ -9,7 +9,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 
 import { ApiError } from '../api/client';
 import * as API from '../api/endpoints';
-import { hobbyKeyOf } from '../api/mappers';
+import { hobbyKeyOf, hobbyLabel } from '../api/mappers';
 import type { Roadmap, TreeStatus, UserHobbyDetail, UserHobbySummary } from '../api/types';
 import type { TreeStageNo } from '../components/Graphics';
 import { MAX_TREE_SLOTS, TreeData, TREES } from '../data/hobbies';
@@ -49,7 +49,7 @@ function toTree(s: UserHobbySummary, d?: UserHobbyDetail | null, roadmap?: Roadm
   const cur = d?.currentActivityRecord ?? null;
   return {
     hobby: hobbyKeyOf(detail.hobbyName),
-    name: detail.hobbyName,
+    name: hobbyLabel(detail.hobbyName),
     stage,
     stageLabel: `${stageNumber}단계${stageName ? ` · ${stageName}` : ''}${statusLabel}`,
     growthStatus: isMax

@@ -24,6 +24,7 @@ import {
   useToast,
 } from '../../components';
 import { Avatar, EmptySlotRow, RoadmapRow } from '../../components/my/MyParts';
+import { NoticeToggleCard } from '../../components/my/NoticeToggleCard';
 import { useForest } from '../../lib/forest';
 import { PROFILE_STATS, profileTags } from '../../data/my';
 import { shortRegion, useAppState } from '../../lib/appState';
@@ -186,6 +187,8 @@ export default function MyScreen() {
             <StatTile key={s.label} item={s} />
           ))}
         </View>
+        <SectionTitle title="알림 설정" right="기본 꺼짐" />
+        <NoticeToggleCard />
         <SectionTitle title="취미 로드맵" right={`${TREES.length}/${MAX_TREE_SLOTS}그루`} />
         {TREES.map((t) => (
           <RoadmapRow

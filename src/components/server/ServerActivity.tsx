@@ -7,6 +7,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
 
+import { ActivityDetailView } from '../activity/ActivityDetailView';
+
 import { errorMessage } from '../../api/client';
 import { getActivity, getSponsoredContent, saveActivity, unsaveActivity } from '../../api/endpoints';
 import { DIFFICULTY_LABEL, PLACE_LABEL } from '../../api/mappers';
@@ -29,32 +31,6 @@ import { Touchable } from '../Touchable';
 const openExternal = (url?: string) => {
   if (url && /^https?:\/\//.test(url)) Linking.openURL(url).catch(() => undefined);
 };
-
-function SponsoredRow({ item }: { item: SponsoredContent }) {
-  return (
-    <Touchable accessibilityLabel={`${item.disclosureLabel ?? '광고'} ${item.title}`} onPress={() => openExternal(item.externalUrl)} style={styles.ad}>
-      <View style={styles.flex}>
-        <View style={styles.rowGap6}>
-          <Tag label={item.disclosureLabel ?? '광고·제휴'} tone="khaki" />
-          {item.sponsorName ? (
-            <AppText variant="micro11Bold" color="textMuted">
-              {item.sponsorName}
-            </AppText>
-          ) : null}
-        </View>
-        <AppText variant="callout14Bold" color="textPrimary">
-          {item.title}
-        </AppText>
-        {item.description ? (
-          <AppText variant="caption12Medium" color="textBody">
-            {item.description}
-          </AppText>
-        ) : null}
-      </View>
-      <IconSlot name="external" size={16} color="textMuted" />
-    </Touchable>
-  );
-}
 
 export function ServerActivity({ activityId, userHobbyId }: { activityId: number; userHobbyId?: number }) {
   const toast = useToast();
@@ -132,96 +108,39 @@ export function ServerActivity({ activityId, userHobbyId }: { activityId: number
     );
   }
 
-  const materials = a.materials ?? [];
   const steps = [...(a.steps ?? [])].sort((x, y) => x.stepNumber - y.stepNumber);
+  const stageName = tree?.server?.roadmap?.stages?.find((st) => st.stageId === a.stageId)?.name;
 
   return (
-    <Screen
-      header={<TopBar title="활동 세부 설명" onAction={() => go(moreHref)} />}
-      footer={
-        <>
-          <Button label={tree?.server ? '이 활동 시작하기' : '이 취미로 나무 심고 시작하기'} onPress={onStart} />
-          <Button label={a.isSaved ? '저장 취소' : '나중에 할래요 · 저장'} variant="ghost" disabled={saving} onPress={toggleSave} />
-        </>
-      }
-      contentStyle={styles.content}
-    >
-      <View style={styles.hero}>
-        <View style={styles.tags}>
-          {a.stageNumber ? <Tag label={`${a.stageNumber}단계`} tone="solid" /> : null}
-          {a.durationMinutes ? <Tag label={`${a.durationMinutes}분`} tone="green" /> : null}
-          {a.estimatedCost != null ? <Tag label={a.estimatedCost ? formatWon(a.estimatedCost) : '0원'} tone="water" /> : null}
-          {a.difficulty ? <Tag label={DIFFICULTY_LABEL[a.difficulty]} tone="gray" /> : null}
-          {a.indoorOutdoor ? <Tag label={PLACE_LABEL[a.indoorOutdoor]} tone="gray" /> : null}
-        </View>
-        <AppText variant="title22Bold" color="brandDeep">
-          {a.title}
-        </AppText>
-        {a.description ? (
-          <AppText variant="callout14Regular" color="textBody">
-            {a.description}
-          </AppText>
-        ) : null}
-      </View>
-
-      {materials.length ? (
-        <Card radius={22} gap={9}>
-          <AppText variant="body16Bold" color="textPrimary">
-            준비물
-          </AppText>
-          {materials.map((m) => (
-            <View key={m.materialId ?? m.name} style={styles.bullet}>
-              <IconSlot name="check" size={16} color="brandPrimary" />
-              <AppText variant="callout14Regular" color="textBody" style={styles.flex}>
-                {`${m.name}${m.quantity ? ` · ${m.quantity}` : ''}${m.isRequired === false ? ' (선택)' : ''}`}
-              </AppText>
-            </View>
-          ))}
-        </Card>
-      ) : null}
-
-      {steps.length ? (
-        <Card radius={22} gap={10}>
-          <AppText variant="body16Bold" color="textPrimary">
-            이렇게 해요
-          </AppText>
-          {steps.map((s) => (
-            <View key={s.stepId} style={styles.step}>
-              <View style={styles.num}>
-                <AppText variant="caption12Bold" color="textOnDark">
-                  {s.stepNumber}
-                </AppText>
-              </View>
-              <View style={styles.flex}>
-                <AppText variant="callout14Bold" color="textPrimary">
-                  {`${s.title}${s.isRequired === false ? ' (선택)' : ''}`}
-                </AppText>
-                {s.description ? (
-                  <AppText variant="caption12Medium" color="textBody">
-                    {s.description}
-                  </AppText>
-                ) : null}
-              </View>
-            </View>
-          ))}
-        </Card>
-      ) : null}
-
-      {(a.cautions ?? []).map((c) => (
-        <InfoNote key={c} text={c} />
-      ))}
-
-      {ads.length ? (
-        <View style={styles.ads}>
-          <AppText variant="caption12Bold" color="textMuted">
-            함께 보면 좋은 제휴 콘텐츠 · 광고
-          </AppText>
-          {ads.map((ad) => (
-            <SponsoredRow key={ad.sponsoredContentId} item={ad} />
-          ))}
-        </View>
-      ) : null}
-    </Screen>
+    <ActivityDetailView
+      m={{
+        title: a.title,
+        group: a.difficulty ? DIFFICULTY_LABEL[a.difficulty] : a.stageNumber ? `${a.stageNumber}단계` : '활동',
+        minutes: a.durationMinutes,
+        goal: a.description,
+        hobbyLine: [tree?.name, a.stageNumber ? `${a.stageNumber}단계${stageName ? ` ${stageName}` : ''}` : null, a.indoorOutdoor ? PLACE_LABEL[a.indoorOutdoor] : null, a.estimatedCost != null ? (a.estimatedCost ? formatWon(a.estimatedCost) : '0원') : null]
+          .filter(Boolean)
+          .join(' · '),
+        materials: (a.materials ?? []).map((m) => `${m.name}${m.quantity ? ` · ${m.quantity}` : ''}${m.isRequired === false ? ' (선택)' : ''}`),
+        steps: steps.map((st) => (st.description ? `${st.title} — ${st.description}` : st.title)),
+        cautions: a.cautions,
+        ads: ads.map((ad) => ({
+          id: String(ad.sponsoredContentId),
+          kind: ad.contentType === 'PLACE' || ad.contentType === 'CLASS' ? 'place' : 'product',
+          title: ad.title,
+          seller: ad.sponsorName ?? '',
+          fit: ad.description,
+          label: ad.disclosureLabel ?? '광고·제휴',
+          onPress: () => openExternal(ad.externalUrl),
+        })),
+        startLabel: tree?.server ? '이 활동 시작하기' : '이 취미로 나무 심고 시작하기',
+        onStart,
+        onMore: () => go(moreHref),
+        saved: !!a.isSaved,
+        saving,
+        onToggleSave: toggleSave,
+      }}
+    />
   );
 }
 

@@ -34,7 +34,7 @@ interface PickCard {
   id: string;
   hobby: HobbyKey;
   name: string;
-  /** 가짜 추천: '잘 맞아요 96%' · 서버 추천: 맞춘 조건 태그 */
+  /** 맞춘 조건 태그 (체험 모드·서버 같은 모양) */
   tags: string[];
   why: string;
   firstActivity?: string;
@@ -43,11 +43,20 @@ interface PickCard {
   hobbyId?: number;
 }
 
+/** Figma v5 추천 카드: 퍼센트 대신 맞춘 조건 태그 (최대 3개) */
+const MOCK_TAGS: Record<string, string[]> = {
+  커피: ['관심 분야', '예산 맞춤', '실내'],
+  독서: ['예산 맞춤', '시간 맞춤', '실내'],
+  러닝: ['입문 쉬움', '야외'],
+  요리: ['관심 분야', '예산 맞춤', '실내'],
+  악기: ['관심 분야', '입문 쉬움'],
+};
+
 const fromMock = (r: RecommendedHobby): PickCard => ({
   id: r.hobby,
   hobby: r.hobby,
   name: r.name,
-  tags: [`잘 맞아요 ${r.match}%`],
+  tags: MOCK_TAGS[r.hobby] ?? MOCK_TAGS[r.name] ?? ['관심 분야'],
   why: r.why,
   firstActivity: r.firstActivity,
 });

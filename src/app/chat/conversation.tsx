@@ -59,7 +59,7 @@ function MessageRow({ item }: { item: ChatMessage }) {
 export default function ConversationScreen() {
   const insets = useSafeAreaInsets();
   const toast = useToast();
-  const { q, focus } = useLocalSearchParams<{ q?: string; focus?: string }>();
+  const { q, focus, cid, new: fresh } = useLocalSearchParams<{ q?: string; focus?: string; cid?: string; new?: string }>();
   const ctx = DEFAULT_CONTEXT;
   const { signedIn } = useSession();
   const { state, updateServer } = useAppState();
@@ -76,7 +76,8 @@ export default function ConversationScreen() {
   const [loadingHistory, setLoadingHistory] = useState(signedIn);
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const conversationRef = useRef<number | null>(state.server.coachConversationId);
+  // ?cid= 지난 대화 열기 · ?new=1 새 대화 · 없으면 마지막 대화
+  const conversationRef = useRef<number | null>(Number(cid) > 0 ? Number(cid) : fresh === '1' ? null : state.server.coachConversationId);
 
   /** 서버(API-34)로 질문 — 실패 후 같은 질문을 다시 보내면 같은 멱등 키를 쓴다 */
   const retryKey = useRef<{ text: string; key: string } | null>(null);
@@ -164,7 +165,7 @@ export default function ConversationScreen() {
     (async () => {
       try {
         let id = conversationRef.current;
-        if (!id) id = (await listCoachConversations(null, 1)).items?.[0]?.conversationId ?? null;
+        if (!id && fresh !== '1') id = (await listCoachConversations(null, 1)).items?.[0]?.conversationId ?? null;
         if (id && alive) {
           const page = await getCoachMessages(id);
           if (!alive) return;
@@ -213,9 +214,15 @@ export default function ConversationScreen() {
             </AppText>
           </View>
         )}
-        <AppText variant="caption12Medium" color="textMuted" style={styles.flex}>
-          답변은 참고용이에요
-        </AppText>
+        <View style={styles.flex} />
+        {signedIn ? (
+          <Touchable small accessibilityLabel="지난 대화 보기" disabled={typing} onPress={() => go('/chat/history')} style={styles.newChat}>
+            <IconSlot name="history" size={12} color="brandDeep" />
+            <AppText variant="caption12Bold" color="brandDeep">
+              지난 대화
+            </AppText>
+          </Touchable>
+        ) : null}
         {signedIn && messages.length > 0 ? (
           <Touchable small accessibilityLabel="새 대화 시작" disabled={typing} onPress={newConversation} style={styles.newChat}>
             <IconSlot name="plus" size={12} color="brandDeep" />
@@ -225,6 +232,9 @@ export default function ConversationScreen() {
           </Touchable>
         ) : null}
       </View>
+      <AppText variant="micro11Bold" color="textMuted" style={styles.disclaimer}>
+        답변은 참고용이에요
+      </AppText>
       <FlatList
         ref={listRef}
         data={messages}
@@ -284,6 +294,14 @@ export default function ConversationScreen() {
           />
           <Touchable
             small
+            accessibilityLabel="음성으로 말하기, 준비 중"
+            onPress={() => toast({ title: '음성 입력은 곧 추가될 예정이에요', sub: '지금은 글자로 물어봐 주세요', icon: 'mic' })}
+            style={styles.voice}
+          >
+            <IconSlot name="mic" size={18} color="brandDeep" />
+          </Touchable>
+          <Touchable
+            small
             accessibilityLabel="보내기"
             accessibilityState={{ disabled: !draft.trim() || typing }}
             disabled={!draft.trim() || typing}
@@ -301,6 +319,7 @@ export default function ConversationScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   root: { flex: 1, backgroundColor: COLORS.bgApp },
+  disclaimer: { paddingHorizontal: 24, paddingBottom: 6 },
   context: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 24, paddingBottom: 6 },
   ctxChip: {
     flexDirection: 'row',
@@ -348,6 +367,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     includeFontPadding: false,
   },
+  voice: { width: 38, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bgGreenSoft },
   send: { width: 38, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bgForest },
   sendOff: { opacity: 0.4 },
 });

@@ -70,7 +70,7 @@ module.exports = ({ config }) => {
 
   plugins.push('expo-dev-client');
 
-  // 스플래시: 초록 배경 + 베이지 로고 (npx expo install expo-splash-screen 후 적용)
+  // 스플래시: 크림 배경 + 새 로고(새싹 + HobbyTree) (npx expo install expo-splash-screen 후 적용)
   let hasSplash = false;
   try {
     require.resolve('expo-splash-screen/package.json');
@@ -81,7 +81,7 @@ module.exports = ({ config }) => {
   if (hasSplash) {
     plugins.push([
       'expo-splash-screen',
-      { image: './assets/splash-icon.png', imageWidth: 220, resizeMode: 'contain', backgroundColor: '#0D530E' },
+      { image: './assets/splash-icon.png', imageWidth: 240, resizeMode: 'contain', backgroundColor: '#FDF8E3' },
     ]);
   }
 

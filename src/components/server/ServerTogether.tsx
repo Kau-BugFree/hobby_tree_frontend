@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { errorMessage } from '../../api/client';
 import { listExperiences, listMyReservations } from '../../api/endpoints';
-import { hobbyKeyOf } from '../../api/mappers';
+import { hobbyKeyOf, hobbyLabel } from '../../api/mappers';
 import type { ExperienceStatus, ExperienceSummary, MyReservation, ReservationStatus } from '../../api/types';
 import { CLASS_ART_BY_HOBBY } from '../../assets/classArt';
 import { SUPPORTED_HOBBIES } from '../../data/hobbies';
@@ -109,7 +109,7 @@ function FeaturedCard({ item }: { item: ExperienceSummary }) {
           <AppText variant="headline18Bold" color="brandDeep">
             {item.price ? `${withComma(item.price)}원` : '무료'}
           </AppText>
-          <Tag label={`${item.hobbyName ?? key} 활동으로 인정`} tone="water" />
+          <Tag label={`${hobbyLabel(item.hobbyName) || key} 활동으로 인정`} tone="water" />
         </View>
       </View>
     </Touchable>
@@ -216,6 +216,19 @@ export function ServerTogether() {
           </View>
         ) : null}
 
+        <Touchable accessibilityLabel="근처 업체 찾기" onPress={() => go('/together/nearby')} style={styles.findNearby}>
+          <IconSlot name="pin" size={18} color="brandDeep" />
+          <View style={styles.flex}>
+            <AppText variant="callout14Bold" color="brandDeep">
+              근처 업체 찾기
+            </AppText>
+            <AppText variant="caption12Medium" color="textMuted">
+              동네 요리교실·악기학원·독서모임을 찾아 예약까지 이어가요
+            </AppText>
+          </View>
+          <IconSlot name="chev" size={16} color="textMuted" />
+        </Touchable>
+
         <SectionTitle title="근처 다른 활동" right={`${nearby.length}곳`} />
         {error ? (
           <AppText variant="callout14Regular" color="textBody">
@@ -242,6 +255,7 @@ export function ServerTogether() {
 }
 
 const styles = StyleSheet.create({
+  findNearby: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16, backgroundColor: COLORS.bgGreenSoft },
   flex: { flex: 1 },
   root: { flex: 1, backgroundColor: COLORS.bgApp },
   content: { gap: 12, paddingHorizontal: 24 },

@@ -3,7 +3,7 @@
  * - 신고 사유(ChoiceGroup 단일) + 자세한 내용(선택, 0/300)
  * - 신고하기 → OV-08 (SWAP) / 취소 → CLOSE
  * 로그인 상태 + 신고 대상(targetType·targetId: 활동·제휴 콘텐츠)이면 API-48 문제 신고
- *   사유 → WRONG_INFORMATION · INAPPROPRIATE · OTHER, 설명은 10~1000자 필수 (24시간 안 같은 신고는 REPORT409_1)
+ *   사유 → WRONG_INFORMATION · INAPPROPRIATE · OTHER, 설명은 ‘[사유] 내용’으로 10자 이상 (24시간 안 같은 신고는 REPORT409_1)
  */
 import { useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
@@ -17,17 +17,16 @@ import { useSession } from '../../lib/session';
 import { back, swap } from '../../lib/nav';
 import { COLORS, TYPO } from '../../theme';
 
-const REASONS = ['정보가 틀려요 (가격·장소·일정)', '링크가 열리지 않아요', '광고·홍보가 지나쳐요', '안전하지 않은 내용이에요', '부적절한 표현이 있어요', '기타'] as const;
+const REASONS = ['정보가 틀려요 (가격·장소·일정)', '광고·홍보가 지나쳐요', '안전하지 않은 내용이에요', '부적절한 표현이 있어요', '기타'] as const;
 type Reason = (typeof REASONS)[number];
 const REASON_TO_SERVER: Record<Reason, ReportReason> = {
   '정보가 틀려요 (가격·장소·일정)': 'WRONG_INFORMATION',
-  '링크가 열리지 않아요': 'BROKEN_LINK',
   '광고·홍보가 지나쳐요': 'INAPPROPRIATE',
   '안전하지 않은 내용이에요': 'INAPPROPRIATE',
   '부적절한 표현이 있어요': 'INAPPROPRIATE',
   기타: 'OTHER',
 };
-const MAX_LEN = 1000;
+const MAX_LEN = 300;
 const MIN_LEN = 10;
 
 export default function ReportSheet() {
@@ -39,7 +38,9 @@ export default function ReportSheet() {
   const [detail, setDetail] = useState('');
   const [busy, setBusy] = useState(false);
   // 서버 신고는 설명 10자 이상 필수
-  const needDetail = server ? detail.trim().length < MIN_LEN : reason === '기타' && !detail.trim();
+  // 서버 설명은 ‘[사유] 내용’ — 사유만으로 10자가 넘으면 내용은 선택 (Figma: 자세한 내용 선택)
+  const description = `[${reason}] ${detail.trim()}`.trim();
+  const needDetail = server ? description.length < MIN_LEN : reason === '기타' && !detail.trim();
 
   const onSubmit = async () => {
     void path;
@@ -50,7 +51,7 @@ export default function ReportSheet() {
           targetType: targetType as 'ACTIVITY' | 'SPONSORED_CONTENT',
           targetId: Number(targetId),
           reason: REASON_TO_SERVER[reason],
-          description: `[${reason}] ${detail.trim()}`.slice(0, MAX_LEN),
+          description: description.slice(0, 1000),
         });
       } catch (e) {
         const msg = e instanceof ApiError && e.code === 'REPORT409_1' ? '같은 내용은 24시간 안에 한 번만 신고할 수 있어요.' : errorMessage(e);
@@ -79,7 +80,7 @@ export default function ReportSheet() {
             onChangeText={(t) => setDetail(t.slice(0, MAX_LEN))}
             maxLength={MAX_LEN}
             multiline
-            placeholder={server ? `무엇이 문제인지 ${MIN_LEN}자 이상 적어 주세요` : reason === '기타' ? '자세한 내용을 적어 주세요' : '자세한 내용을 적어 주세요 (선택)'}
+            placeholder={reason === '기타' ? '자세한 내용을 적어 주세요' : '자세한 내용을 적어 주세요 (선택)'}
             placeholderTextColor={COLORS.textMuted}
             accessibilityLabel="자세한 내용"
             style={[TYPO.callout14Regular, styles.input]}

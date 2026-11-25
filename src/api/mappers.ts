@@ -205,6 +205,13 @@ export function hobbyKeyOf(name?: string | null, categoryName?: string | null): 
   return '요리';
 }
 
+/** 화면에 보일 취미 이름 — 서버의 ‘악기연주’·‘악기 연주’도 ‘악기’로 (요리 · 악기 · 독서) */
+export function hobbyLabel(name?: string | null): string {
+  if (!name) return '';
+  for (const [re, key] of NAME_RULES) if (re.test(name) && (key === '요리' || key === '악기' || key === '독서')) return key;
+  return name;
+}
+
 /** 추천 근거 코드 → 짧은 한글 태그 */
 const CRITERIA_LABEL: Record<string, string> = {
   INDOOR: '실내',

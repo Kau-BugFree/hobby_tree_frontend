@@ -63,6 +63,9 @@ export default function CoachPanel() {
           <AppText variant="callout14Regular" color="textMuted" style={styles.flex}>
             하비 코치에게 물어보기
           </AppText>
+          <View style={styles.voice}>
+            <IconSlot name="mic" size={18} color="brandDeep" />
+          </View>
           <View style={styles.send}>
             <IconSlot name="send" size={18} color="textOnDark" />
           </View>
@@ -103,6 +106,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: COLORS.bgSunken,
   },
+  voice: { width: 38, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bgGreenSoft },
   send: { width: 38, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bgForest },
   fab: {
     position: 'absolute',

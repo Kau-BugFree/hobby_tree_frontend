@@ -14,9 +14,9 @@ import { AppText, Button, IconSlot, IconTile, InfoNote, OverlaySheet, useToast }
 import { CheckRow } from '../../components/my/MyParts';
 import { LOCATION_FACTS, LegalRow } from '../../data/terms';
 import { useAppState } from '../../lib/appState';
-import { errorMessage } from '../../api/client';
-import { setLocation } from '../../api/endpoints';
-import { currentCoords, locateDistrict } from '../../lib/location';
+import { ApiError, errorMessage } from '../../api/client';
+import { searchRegions, setLocation } from '../../api/endpoints';
+import { currentCoords, districtOf, locateDistrict } from '../../lib/location';
 import { recordConsent } from '../../lib/locationConsent';
 import { useSession } from '../../lib/session';
 import { back, go, swap } from '../../lib/nav';
@@ -43,26 +43,62 @@ export default function LocationConsentSheet() {
   const [busy, setBusy] = useState(false);
   const ready = agree.terms && agree.personal && !busy;
 
-  /** 서버: 동의 기록 → 좌표 → 지역 설정 */
+  /**
+   * 서버: 동의 기록(API-43) → 좌표 → 지역 설정(API-42 DEVICE)
+   * 서버가 좌표를 지역으로 못 바꾸면(LOCATION404_1 · 503_1 등) 기기에서 시·구를 찾아
+   * API-41로 지역 ID를 검색한 뒤 API-42 MANUAL로 저장한다. 그래도 안 되면 직접 입력으로.
+   */
   const onAgreeServer = async () => {
     setBusy(true);
+    const fail = (title: string, sub: string) => {
+      swap('/my/region');
+      toast({ title, sub, icon: 'pin' });
+    };
     try {
-      const consent = await recordConsent(state.server.options, true);
-      update({ locationConsent: true });
+      let consentVersion: string;
+      try {
+        consentVersion = (await recordConsent(state.server.options, true)).version;
+        update({ locationConsent: true });
+      } catch (e) {
+        return fail('위치 동의를 저장하지 못했어요', `${errorMessage(e)} · 지역을 직접 입력해 주세요`);
+      }
       const pos = await currentCoords();
       if (!pos.ok) {
-        swap('/my/region');
-        toast({ title: pos.reason === 'denied' ? '위치 권한이 꺼져 있어요' : '현재 위치를 찾지 못했어요', sub: '지역을 직접 입력해 주세요', icon: 'pin' });
-        return;
+        return fail(pos.reason === 'denied' ? '위치 권한이 꺼져 있어요' : '현재 위치를 찾지 못했어요', '지역을 직접 입력해 주세요');
       }
-      const res = await setLocation({ source: 'DEVICE', latitude: pos.latitude, longitude: pos.longitude, consentVersion: consent.version });
-      const region = res.location?.fullName ?? res.location?.name ?? state.region;
-      update({ region });
+      let saved: string | null = null;
+      let serverError: unknown = null;
+      try {
+        const res = await setLocation({ source: 'DEVICE', latitude: pos.latitude, longitude: pos.longitude, consentVersion });
+        saved = res.location?.fullName ?? res.location?.name ?? null;
+      } catch (e) {
+        serverError = e;
+      }
+      // 서버 변환 실패 → 기기에서 시·구 찾기 → API-41 검색 → MANUAL 저장
+      if (!saved) {
+        const district = await districtOf(pos.latitude, pos.longitude);
+        const gu = district?.split(' ').pop();
+        if (gu) {
+          try {
+            const found = (await searchRegions({ keyword: gu, level: 'SIGUNGU', size: 10 })).items ?? [];
+            const sido = district!.split(' ')[0];
+            const hit = found.find((r) => r.name === gu && (!sido || (r.fullName ?? '').includes(sido))) ?? found.find((r) => r.name === gu) ?? found[0];
+            if (hit) {
+              const res = await setLocation({ source: 'MANUAL', regionId: hit.regionId });
+              saved = res.location?.fullName ?? res.location?.name ?? hit.fullName ?? hit.name;
+            }
+          } catch (e) {
+            serverError = serverError ?? e;
+          }
+        }
+      }
+      if (!saved) {
+        const code = serverError instanceof ApiError ? ` (${serverError.code})` : '';
+        return fail('현재 위치로 지역을 정하지 못했어요', `${serverError ? errorMessage(serverError) : '지역을 찾지 못했어요'}${code} · 지역을 직접 입력해 주세요`);
+      }
+      update({ region: saved });
       back();
-      toast({ title: `지역을 ‘${region}’로 정했어요`, sub: '좌표는 지역을 찾는 데만 쓰고 저장하지 않아요', icon: 'pin' });
-    } catch (e) {
-      swap('/my/region');
-      toast({ title: '현재 위치로 지역을 정하지 못했어요', sub: `${errorMessage(e)} · 지역을 직접 입력해 주세요`, icon: 'pin' });
+      toast({ title: `지역을 ‘${saved}’로 정했어요`, sub: '좌표는 지역을 찾는 데만 쓰고 저장하지 않아요', icon: 'pin' });
     } finally {
       setBusy(false);
     }

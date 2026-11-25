@@ -236,3 +236,11 @@ export const reportContent = (body: ReportRequest) => api.post<ReportResponse>('
 /** API-49 활동 관련 제휴 콘텐츠 (광고·제휴 표시 필수) */
 export const getSponsoredContent = (activityId: number) =>
   api.get<SponsoredContentList>(`/activities/${activityId}/sponsored-content`);
+
+/* ── 네이버 지역 업체 (49개 목록 밖 신규 API) ── */
+/** 지역명 + 취미로 근처 업체 검색 (최대 5개) */
+export const searchLocalBusinesses = (region: string, hobby: import('./types').LocalHobbyCode) =>
+  api.get<import('./types').LocalBusinessList>('/local-businesses', { query: { region, hobby } });
+/** 고른 업체 → experienceId·sessionId 발급 (예약 기록은 API-37로) */
+export const selectLocalBusiness = (body: import('./types').LocalBusinessSelectRequest) =>
+  api.post<import('./types').LocalBusinessSelectResponse>('/local-businesses/select', { body });

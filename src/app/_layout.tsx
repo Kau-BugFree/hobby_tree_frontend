@@ -10,6 +10,7 @@ import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastProvider } from '../components';
+import { UpdateChecker } from '../components/UpdateChecker';
 import { AppStateProvider } from '../lib/appState';
 import { ForestProvider } from '../lib/forest';
 import { SessionProvider } from '../lib/session';
@@ -85,6 +86,7 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding/planted" options={{ animation: 'fade' }} />
             <Stack.Screen name="together/booked" options={{ animation: 'fade' }} />
           </Stack>
+          <UpdateChecker />
         </ToastProvider>
         </ForestProvider>
         </SessionProvider>

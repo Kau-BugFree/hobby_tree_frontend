@@ -11,6 +11,21 @@ import * as Location from 'expo-location';
  */
 export type LocateResult = { ok: true; region: string } | { ok: false; reason: 'denied' | 'unavailable' };
 
+/** 위치 찾기 최대 대기 시간 — 에뮬레이터처럼 GPS 신호가 없으면 getCurrentPositionAsync가 끝나지 않는다 */
+const LOCATE_TIMEOUT_MS = 10000;
+
+/**
+ * 현재 좌표 1회. 위치 서비스가 꺼져 있으면 바로 실패,
+ * 10초 안에 못 찾으면 최근 10분 안의 마지막 위치를 쓰고, 그것도 없으면 실패(직접 입력으로).
+ */
+async function getPosition(): Promise<Location.LocationObject | null> {
+  if (!(await Location.hasServicesEnabledAsync().catch(() => false))) return null;
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), LOCATE_TIMEOUT_MS));
+  const pos = await Promise.race([Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null), timeout]);
+  if (pos) return pos;
+  return Location.getLastKnownPositionAsync({ maxAge: 10 * 60 * 1000 }).catch(() => null);
+}
+
 const SIDO_SUFFIX = /(특별시|광역시|특별자치시|특별자치도|도)$/;
 
 export function toDistrict(addr: Location.LocationGeocodedAddress | undefined): string | null {
@@ -25,7 +40,8 @@ export async function locateDistrict(): Promise<LocateResult> {
   const perm = await Location.requestForegroundPermissionsAsync();
   if (perm.status !== Location.PermissionStatus.GRANTED) return { ok: false, reason: 'denied' };
   try {
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const pos = await getPosition();
+    if (!pos) return { ok: false, reason: 'unavailable' };
     const [addr] = await Location.reverseGeocodeAsync({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
     const region = toDistrict(addr);
     return region ? { ok: true, region } : { ok: false, reason: 'unavailable' };
@@ -43,9 +59,20 @@ export async function currentCoords(): Promise<CoordsResult> {
   const perm = await Location.requestForegroundPermissionsAsync();
   if (perm.status !== Location.PermissionStatus.GRANTED) return { ok: false, reason: 'denied' };
   try {
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const pos = await getPosition();
+    if (!pos) return { ok: false, reason: 'unavailable' };
     return { ok: true, latitude: pos.coords.latitude, longitude: pos.coords.longitude };
   } catch {
     return { ok: false, reason: 'unavailable' };
+  }
+}
+
+/** 좌표 → ‘서울 마포구’ (기기에서 역지오코딩, 좌표는 저장하지 않음) */
+export async function districtOf(latitude: number, longitude: number): Promise<string | null> {
+  try {
+    const [addr] = await Location.reverseGeocodeAsync({ latitude, longitude });
+    return toDistrict(addr);
+  } catch {
+    return null;
   }
 }

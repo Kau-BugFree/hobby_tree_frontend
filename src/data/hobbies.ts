@@ -102,7 +102,7 @@ export const ACTIVITIES: Record<string, ActivityDetail> = {
     category: '피아노',
     description: '오른손 멜로디에 왼손 첫 박 기본음을 붙여 봐요.',
     tags: [
-      { label: '악기 연주 · 2단계', tone: 'solid' },
+      { label: '악기 · 2단계', tone: 'solid' },
       { label: '20분 · 건반', tone: 'green' },
     ],
     steps: [
@@ -168,7 +168,7 @@ export const TREES: TreeData[] = [
   },
   {
     hobby: '악기',
-    name: '악기 연주',
+    name: '악기',
     stage: 2,
     stageLabel: '2단계 · 묘목',
     growthStatus: '완료 1개 · 2개 더 하면 어린 나무',

@@ -890,3 +890,35 @@ export interface SponsoredContentList {
   activityId?: number;
   items?: SponsoredContent[];
 }
+
+/* ───────── 네이버 지역 업체 (49개 목록 밖 신규 API) ───────── */
+export type LocalHobbyCode = 'COOKING' | 'INSTRUMENT' | 'READING';
+/** GET /local-businesses — 네이버 지역 검색 결과 (최대 5개, 저장하지 않음) */
+export interface LocalBusiness {
+  name: string;
+  category?: string;
+  address?: string;
+  roadAddress?: string;
+  telephone?: string;
+  mapX: string;
+  mapY: string;
+}
+export interface LocalBusinessList {
+  region: string;
+  hobby: LocalHobbyCode;
+  items: LocalBusiness[];
+}
+/** POST /local-businesses/select — 고른 업체를 예약 가능한 experience·session으로 준비 */
+export interface LocalBusinessSelectRequest {
+  hobby: LocalHobbyCode;
+  name: string;
+  category?: string;
+  address?: string;
+  mapX: string;
+  mapY: string;
+}
+export interface LocalBusinessSelectResponse {
+  experienceId: number;
+  sessionId: number;
+  isNew: boolean;
+}

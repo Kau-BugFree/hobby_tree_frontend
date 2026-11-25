@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0D530E",
+        "backgroundColor": "#FDF8E3",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -65,7 +65,10 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/88cb20e0-7e25-4158-a39d-8171e6bc2e22"
+      "url": "https://u.expo.dev/88cb20e0-7e25-4158-a39d-8171e6bc2e22",
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      }
     }
   }
 }

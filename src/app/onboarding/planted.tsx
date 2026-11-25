@@ -22,9 +22,9 @@ export default function OnboardingPlanted() {
   const n = names.length;
   return (
     <Screen
-      bg="bgForest"
+      bg="bgApp"
       scroll
-      footer={<Button variant="secondary" label="내 나무 보러 가기" onPress={() => reset('/home')} />}
+      footer={<Button label="내 나무 보러 가기" onPress={() => reset('/home')} />}
       contentStyle={styles.content}
     >
       <View style={styles.seeds}>
@@ -34,24 +34,24 @@ export default function OnboardingPlanted() {
       </View>
       <View style={styles.tags}>
         {names.map((h) => (
-          <Tag key={h} label={`${h} 씨앗`} tone="onDark" />
+          <Tag key={h} label={`${h} 씨앗`} tone="green" />
         ))}
       </View>
-      <AppText variant="title26Black" color="textOnDark" align="center">
+      <AppText variant="title26Black" color="brandDeep" align="center">
         {`씨앗 ${n}개를 심었어요`}
       </AppText>
-      <AppText variant="callout14Regular" color="textOnDarkMuted" align="center">
+      <AppText variant="callout14Regular" color="textMuted" align="center">
         {'같은 단계 활동을 3개 마치면\n나무가 한 단계씩 자라요.'}
       </AppText>
       <View style={styles.guide}>
-        <AppText variant="caption12Bold" color="paletteKhaki">
+        <AppText variant="caption12Bold" color="brandPrimary">
           나무가 자라는 6단계
         </AppText>
         <View style={styles.stageRow}>
           {STAGES.map((s) => (
             <View key={s} style={styles.stageCol}>
               <TreeStage stage={s} scale={54 / 300} />
-              <AppText variant="micro11Bold" color="textOnDark" align="center">
+              <AppText variant="micro11Bold" color="brandDeep" align="center">
                 {`${s} ${STAGE_NAME[s]}`}
               </AppText>
             </View>
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   seeds: { flexDirection: 'row', justifyContent: 'center' },
   overlap: { marginLeft: -18 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
-  guide: { alignSelf: 'stretch', gap: 10, padding: 16, borderRadius: 24, backgroundColor: COLORS.bgForest2 },
+  guide: { alignSelf: 'stretch', gap: 10, padding: 16, borderRadius: 24, backgroundColor: COLORS.bgGreenSoft },
   stageRow: { flexDirection: 'row', gap: 2 },
   stageCol: { flex: 1, alignItems: 'center', gap: 2 },
   water: {

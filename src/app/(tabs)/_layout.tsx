@@ -4,7 +4,7 @@ import React from 'react';
 import { TabBar } from '../../components';
 import { COLORS } from '../../theme';
 
-/** 메인 탭 4개 (Figma Tab Bar: 홈 · 체험 · 함께 · MY) — 떠 있는 글래스 탭바 */
+/** 메인 탭 4개 (Figma Tab Bar: 홈 · 체험 · 함께 · 마이) */
 export default function TabsLayout() {
   return (
     <Tabs

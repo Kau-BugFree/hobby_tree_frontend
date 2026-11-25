@@ -15,12 +15,12 @@ export default function PlantedScreen() {
   const count = live ? trees.length : trees.length + 1;
   return (
     <Screen
-      bg="bgForest"
+      bg="bgApp"
       footer={
         <>
-          <Button variant="secondary" label="홈에서 보기" onPress={() => reset('/home')} />
+          <Button label="홈에서 보기" onPress={() => reset('/home')} />
           <Touchable small onPress={() => reset('/experience')} style={styles.link}>
-            <AppText variant="callout14Bold" color="textOnDarkMuted">
+            <AppText variant="callout14Bold" color="textMuted">
               {`체험에서 ${name} 활동 둘러보기`}
             </AppText>
           </Touchable>
@@ -33,21 +33,21 @@ export default function PlantedScreen() {
       </View>
       <TagRow
         tags={[
-          { label: `${name} · 0단계 씨앗`, tone: 'onDark' },
-          { label: `${count}/${MAX_TREE_SLOTS}그루`, tone: 'onDark' },
+          { label: `${name} · 0단계 씨앗`, tone: 'green' },
+          { label: `${count}/${MAX_TREE_SLOTS}그루`, tone: 'green' },
         ]}
         style={styles.tags}
       />
-      <AppText variant="title26Black" color="textOnDark" align="center">
+      <AppText variant="title26Black" color="brandDeep" align="center">
         {`${name} 씨앗을 심었어요`}
       </AppText>
-      <AppText variant="callout14Regular" color="textOnDarkMuted" align="center">
+      <AppText variant="callout14Regular" color="textMuted" align="center">
         {first ? `같은 단계 활동 3개를 마치면 새싹이 돼요.\n첫 활동은 ‘${first}’이에요.` : '같은 단계 활동 3개를 마치면 한 단계 자라요.\n홈에서 첫 활동을 골라 보세요.'}
       </AppText>
       {count >= MAX_TREE_SLOTS ? (
         <View style={styles.full}>
-          <IconSlot name="info" size={16} color="textOnDark" />
-          <AppText variant="caption12Bold" color="textOnDark">
+          <IconSlot name="info" size={16} color="brandDeep" />
+          <AppText variant="caption12Bold" color="brandDeep">
             자리가 다 찼어요 · 나무를 쉬게 하면 다시 심을 수 있어요
           </AppText>
         </View>
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.onDarkGlassSoft,
+    backgroundColor: COLORS.bgGreenSoft,
   },
   tags: { justifyContent: 'center' },
   full: {
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 16,
-    backgroundColor: COLORS.onDarkChip,
+    backgroundColor: COLORS.bgGreenSoft,
   },
   link: { paddingVertical: 8 },
 });

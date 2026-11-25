@@ -1,211 +1,156 @@
 /**
- * E-02 서버판 · 취미 단계와 단계별 활동
- *   API-23 단계 목록 → 칩으로 단계 고르기 → API-24 단계별 활동 (커서 ‘더 보기’)
- *   나무가 있으면(userHobbyId) API-22 로드맵으로 완료·현재·잠김 표시
- *   활동 → 활동 상세(API-25)
+ * E-02 로그인 상태 · 단계별 세부 활동 — 화면은 Figma v6 E-02와 같은 StageListView
+ *   API-23 취미 단계 목록 → 고른 단계(stageId, 없으면 내 나무의 현재 단계)
+ *   API-24 그 단계의 활동 (마지막 페이지에 오면 커서로 다음 활동)
+ *   API-22 내 나무가 있으면 완료·현재·잠김 상태를 요약 줄에 표시
+ *   다른 취미 토글 → 내 서버 나무들 사이 이동
  */
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { errorMessage } from '../../api/client';
 import { getRoadmap, listStageActivities, listStages } from '../../api/endpoints';
-import { DIFFICULTY_LABEL, hobbyKeyOf, PLACE_LABEL } from '../../api/mappers';
+import { DIFFICULTY_LABEL, hobbyKeyOf, hobbyLabel, PLACE_LABEL } from '../../api/mappers';
 import type { ActivitySummary, HobbyStage, StageState } from '../../api/types';
 import { formatWon } from '../../lib/appState';
+import { useForest } from '../../lib/forest';
 import { go } from '../../lib/nav';
 import { COLORS } from '../../theme';
+import { StageListView } from '../activity/StageListView';
 import { AppText } from '../AppText';
 import { Button } from '../Button';
-import { HobbyIcon } from '../Graphics';
-import { IconSlot } from '../IconSlot';
-import { Tag } from '../Tag';
+import type { HobbyKey, TreeStageNo } from '../Graphics';
+import { STAGE_NAME } from '../Graphics';
 import { TopBar } from '../TopBar';
-import { Touchable } from '../Touchable';
 
-const STATE_LABEL: Record<StageState, string> = { COMPLETED: '완료', CURRENT: '지금 단계', LOCKED: '잠김' };
+const STATE_TEXT: Record<StageState, string> = { COMPLETED: '완료한 단계', CURRENT: '지금 단계', LOCKED: '아직 잠긴 단계 · 미리 보기' };
 
-export function ServerStage({ hobbyId, userHobbyId, stageId: initialStageId, hobbyName }: { hobbyId: number; userHobbyId?: number; stageId?: number; hobbyName?: string }) {
-  const insets = useSafeAreaInsets();
-  const [stages, setStages] = useState<HobbyStage[] | null>(null);
-  const [name, setName] = useState(hobbyName ?? '');
-  const [states, setStates] = useState<Record<number, StageState>>({});
-  const [stageId, setStageId] = useState<number | null>(initialStageId ?? null);
+export function ServerStage({ hobbyId, userHobbyId, stageId: wantStageId, hobbyName }: { hobbyId: number; userHobbyId?: number; stageId?: number; hobbyName?: string }) {
+  const { trees } = useForest();
+  const [stage, setStage] = useState<HobbyStage | null>(null);
+  const [name, setName] = useState(hobbyLabel(hobbyName));
+  const [state, setState] = useState<StageState | null>(null);
   const [items, setItems] = useState<ActivitySummary[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [hasNext, setHasNext] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const cursor = useRef<string | null>(null);
+  const hasNext = useRef(false);
+  const busy = useRef(false);
 
-  // 단계 목록 + (나무가 있으면) 로드맵 상태
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [list, roadmap] = await Promise.all([listStages(hobbyId), userHobbyId ? getRoadmap(userHobbyId).catch(() => null) : Promise.resolve(null)]);
-        if (!alive) return;
-        setStages(list.stages ?? []);
-        if (list.hobbyName) setName(list.hobbyName);
-        const st: Record<number, StageState> = {};
-        for (const s of roadmap?.stages ?? []) st[s.stageId] = s.state;
-        setStates(st);
-        const current = roadmap?.stages?.find((s) => s.state === 'CURRENT')?.stageId;
-        setStageId((prev) => prev ?? current ?? list.stages?.[0]?.stageId ?? null);
-      } catch (e) {
-        if (alive) setError(errorMessage(e));
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [list, roadmap] = await Promise.all([listStages(hobbyId), userHobbyId ? getRoadmap(userHobbyId).catch(() => null) : Promise.resolve(null)]);
+      const stages = list.stages ?? [];
+      if (list.hobbyName) setName(hobbyLabel(list.hobbyName));
+      const currentId = roadmap?.stages?.find((x) => x.state === 'CURRENT')?.stageId;
+      const picked = stages.find((x) => x.stageId === (wantStageId ?? currentId)) ?? stages[0] ?? null;
+      setStage(picked);
+      setState(roadmap?.stages?.find((x) => x.stageId === picked?.stageId)?.state ?? null);
+      if (picked) {
+        const res = await listStageActivities(picked.stageId, null, 50);
+        setItems(res.items ?? []);
+        cursor.current = res.nextCursor ?? null;
+        hasNext.current = !!res.hasNext;
+      } else {
+        setItems([]);
       }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [hobbyId, userHobbyId]);
-
-  const loadPage = useCallback(
-    async (id: number, after: string | null) => {
-      setLoading(true);
-      try {
-        const res = await listStageActivities(id, after, 20);
-        setItems((prev) => (after ? [...prev, ...(res.items ?? [])] : (res.items ?? [])));
-        setCursor(res.nextCursor ?? null);
-        setHasNext(!!res.hasNext);
-        setError(null);
-      } catch (e) {
-        setError(errorMessage(e));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [hobbyId, userHobbyId, wantStageId]);
 
   useEffect(() => {
-    if (stageId) loadPage(stageId, null);
-  }, [stageId, loadPage]);
+    load();
+  }, [load]);
 
-  const key = hobbyKeyOf(name);
-  const current = stages?.find((s) => s.stageId === stageId);
+  const more = useCallback(async () => {
+    if (!stage || !hasNext.current || busy.current) return;
+    busy.current = true;
+    try {
+      const res = await listStageActivities(stage.stageId, cursor.current, 50);
+      setItems((prev) => [...prev, ...(res.items ?? [])]);
+      cursor.current = res.nextCursor ?? null;
+      hasNext.current = !!res.hasNext;
+    } catch {
+      // 더 불러오기 실패는 조용히 — 지금 목록은 그대로
+    } finally {
+      busy.current = false;
+    }
+  }, [stage]);
 
-  const header = (
-    <View style={styles.head}>
-      <View style={styles.rowGap6}>
-        <HobbyIcon hobby={key} size={18} />
-        <AppText variant="title22Bold" color="brandDeep">
-          {name || '취미'}
-        </AppText>
-      </View>
-      <View style={styles.chips}>
-        {(stages ?? []).map((s) => {
-          const on = s.stageId === stageId;
-          const st = states[s.stageId];
-          return (
-            <Touchable key={s.stageId} accessibilityState={{ selected: on }} onPress={() => setStageId(s.stageId)} style={[styles.chip, on && styles.chipOn]}>
-              <AppText variant="caption12Bold" color={on ? 'textOnDark' : 'textBody'}>
-                {`${s.stageNumber}단계 ${s.name}`}
-              </AppText>
-              {st ? (
-                <AppText variant="micro11Bold" color={on ? 'paletteKhaki' : 'textMuted'}>
-                  {STATE_LABEL[st]}
-                </AppText>
-              ) : null}
-            </Touchable>
-          );
-        })}
-      </View>
-      {current ? (
-        <View style={styles.stageInfo}>
-          {current.description ? (
-            <AppText variant="callout14Regular" color="textBody">
-              {current.description}
-            </AppText>
-          ) : null}
-          <AppText variant="caption12Medium" color="textMuted">
-            {`활동 ${current.activityCount ?? items.length}개${current.unlockAtDistinctCompletedCount ? ` · 활동 ${current.unlockAtDistinctCompletedCount}개를 마치면 열려요` : ''}`}
+  if (error) {
+    return (
+      <View style={styles.root}>
+        <TopBar title="세부 활동" />
+        <View style={styles.center}>
+          <AppText variant="callout14Regular" color="textBody" align="center">
+            {error}
           </AppText>
-          {states[current.stageId] === 'LOCKED' ? (
-            <AppText variant="caption12Bold" color="brandPrimary">
-              아직 잠긴 단계예요 · 미리 둘러볼 수 있어요
-            </AppText>
-          ) : null}
+          <Button label="다시 시도" variant="outline" hug onPress={load} />
         </View>
-      ) : null}
-      {error ? (
-        <AppText variant="caption12Medium" color="accentDanger">
-          {error}
-        </AppText>
-      ) : null}
-    </View>
-  );
-
-  return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <TopBar title="단계별 활동" />
-      {stages === null && !error ? (
+      </View>
+    );
+  }
+  if (!stage && loading) {
+    return (
+      <View style={styles.root}>
+        <TopBar title="세부 활동" />
         <View style={styles.center}>
           <ActivityIndicator color={COLORS.brandPrimary} />
         </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(a) => String(a.activityId)}
-          ListHeaderComponent={header}
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 24 }]}
-          renderItem={({ item }) => (
-            <Touchable
-              accessibilityLabel={item.title}
-              onPress={() => go(`/experience/detail?activityId=${item.activityId}${userHobbyId ? `&userHobbyId=${userHobbyId}` : ''}`)}
-              style={styles.row}
-            >
-              <View style={styles.flex}>
-                <AppText variant="body16Bold" color="textPrimary">
-                  {item.title}
-                </AppText>
-                <View style={styles.meta}>
-                  {item.durationMinutes ? <Tag label={`${item.durationMinutes}분`} tone="khaki" /> : null}
-                  {item.estimatedCost != null ? <Tag label={item.estimatedCost ? formatWon(item.estimatedCost) : '0원'} tone="gray" /> : null}
-                  {item.difficulty ? <Tag label={DIFFICULTY_LABEL[item.difficulty]} tone="gray" /> : null}
-                  {item.indoorOutdoor ? <Tag label={PLACE_LABEL[item.indoorOutdoor]} tone="gray" /> : null}
-                </View>
-              </View>
-              {item.isSaved ? <IconSlot name="bookmark" size={16} color="brandPrimary" /> : null}
-              <IconSlot name="chev" size={16} color="textMuted" />
-            </Touchable>
-          )}
-          ListEmptyComponent={
-            loading ? (
-              <ActivityIndicator color={COLORS.brandPrimary} />
-            ) : (
-              <AppText variant="callout14Regular" color="textMuted" align="center">
-                이 단계에는 아직 활동이 없어요
-              </AppText>
-            )
-          }
-          ListFooterComponent={hasNext ? <Button label={loading ? '불러오는 중…' : '더 보기'} variant="outline" disabled={loading} onPress={() => stageId && loadPage(stageId, cursor)} /> : undefined}
-        />
-      )}
-    </View>
+      </View>
+    );
+  }
+
+  const hobby = hobbyKeyOf(name);
+  const treeStage = Math.max(0, Math.min(5, stage?.stageNumber ?? 1)) as TreeStageNo;
+  // 다른 취미 토글: 내 서버 나무들
+  const mine = trees.filter((t) => t.server);
+  const options = Array.from(new Set(mine.map((t) => t.hobby))) as HobbyKey[];
+
+  return (
+    <StageListView
+      m={{
+        title: stage?.name ?? '세부 활동',
+        hobby,
+        treeStage,
+        eyebrow: `${name || hobby} · ${stage ? `${stage.stageNumber}단계` : STAGE_NAME[treeStage]}`,
+        summary: [stage?.description, `활동 ${stage?.activityCount ?? items.length}개`, state ? STATE_TEXT[state] : null].filter(Boolean).join(' · '),
+        cards: items.map((a) => ({
+          id: String(a.activityId),
+          title: a.title,
+          tag: a.difficulty ? DIFFICULTY_LABEL[a.difficulty] : `${stage?.stageNumber ?? ''}단계`,
+          minutes: a.durationMinutes,
+          goal: [a.indoorOutdoor ? PLACE_LABEL[a.indoorOutdoor] : null, a.estimatedCost != null ? (a.estimatedCost ? formatWon(a.estimatedCost) : '0원') : null].filter(Boolean).join(' · '),
+          searchText: a.title,
+          saved: a.isSaved,
+          onPress: () => go(`/experience/detail?activityId=${a.activityId}${userHobbyId ? `&userHobbyId=${userHobbyId}` : ''}`),
+        })),
+        hobbyOptions: options.length ? options : [hobby],
+        onChangeHobby: (h) => {
+          const t = mine.find((x) => x.hobby === h);
+          if (!t?.server) return;
+          router.setParams({
+            hobbyId: String(t.server.hobbyId),
+            userHobbyId: String(t.server.userHobbyId),
+            stageId: t.server.currentStageId ? String(t.server.currentStageId) : '',
+            hobby: t.name,
+          });
+        },
+        onEndReached: more,
+        loading,
+        emptyText: '이 단계에는 아직 활동이 없어요',
+      }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  root: { flex: 1, backgroundColor: COLORS.bgApp },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { gap: 10, paddingHorizontal: 24 },
-  head: { gap: 12, paddingTop: 8, paddingBottom: 6 },
-  rowGap6: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 16, backgroundColor: COLORS.bgSurface, borderWidth: 1, borderColor: COLORS.borderDefault },
-  chipOn: { backgroundColor: COLORS.bgForest, borderColor: COLORS.bgForest },
-  stageInfo: { gap: 4, padding: 14, borderRadius: 18, backgroundColor: COLORS.bgKhaki },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    borderRadius: 20,
-    backgroundColor: COLORS.bgSurface,
-    borderWidth: 1,
-    borderColor: COLORS.borderDefault,
-  },
-  meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  root: { flex: 1, backgroundColor: COLORS.bgApp, paddingTop: 40 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
 });
